@@ -23,9 +23,39 @@ header("Expires: 0");
     <meta name="x5-fullscreen" content="true"><!--QQ强制全屏-->
     <meta name="x5-page-mode" content="app"><!--QQ应用模式-->
     
-    <title>小白在线音乐随身听</title>
-    <meta name="description" content="小白在线音乐播放器，基于网易云音乐API的现代化在线音乐随身听。"/>
-    <meta name="keywords" content="小白在线音乐,在线音乐播放器,MKOnlinePlayer,网易云音乐,全景空间"/>
+    <title>小白在线音乐随身听 - 极简纯净移动端音乐播放器</title>
+    <meta name="description" content="小白在线音乐随身听移动端，支持全网音乐搜索、歌词轮播、随心听与多端云同步。"/>
+    <meta name="keywords" content="小白在线音乐,在线随身听,移动音乐播放器,MKOnlinePlayer,歌词同步,全网解析,岁月静好"/>
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow">
+    <meta name="baiduspider" content="index, follow">
+    <link rel="canonical" href="https://music.21212121.xyz/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="小白在线音乐随身听 - 岁月静好">
+    <meta property="og:description" content="极简纯净移动端音乐随身听，支持全网音乐搜索与歌词同步。">
+    <meta property="og:url" content="https://music.21212121.xyz/m.php">
+    <meta property="og:image" content="https://tc1.21212121.xyz/asite/assets/images/521.png">
+    <meta property="og:site_name" content="岁月静好">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="小白在线音乐随身听 - 岁月静好">
+    <meta name="twitter:description" content="极简纯净移动端音乐随身听，支持全网音乐搜索与歌词同步。">
+    <meta name="twitter:image" content="https://tc1.21212121.xyz/asite/assets/images/521.png">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "小白在线音乐随身听",
+      "url": "https://music.21212121.xyz/m.php",
+      "description": "极简纯净移动端音乐随身听，支持全网音乐搜索与歌词同步。",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "All",
+      "author": {
+        "@type": "Person",
+        "name": "小白",
+        "url": "https://21212121.xyz"
+      }
+    }
+    </script>
     
     <!-- 不支持IE8及以下版本浏览器 -->
     <!--[if lte IE 8]>
