@@ -762,6 +762,11 @@ function addHis(music) {
     musicList[2].item.unshift(music);
     
     playerSavedata('his', musicList[2].item);  // 保存播放历史列表
+
+    // 云端数据库持久化漫游记录 (SQLite / JSON)
+    if (window.CloudVault && typeof window.CloudVault.recordHistory === 'function') {
+        window.CloudVault.recordHistory(music);
+    }
 }
 
 // 初始化播放列表

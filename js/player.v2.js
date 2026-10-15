@@ -646,6 +646,9 @@ function toggleLikeCurrentMusic() {
         localStorage.setItem('mk_liked_songs', JSON.stringify(liked));
         updateLikeBtnStatus(music);
         showToast('已从我喜欢的音乐中移除');
+        if (window.CloudVault && typeof window.CloudVault.toggleFavorite === 'function') {
+            window.CloudVault.toggleFavorite(music);
+        }
     } else {
         liked.unshift({
             key: key,
@@ -659,6 +662,9 @@ function toggleLikeCurrentMusic() {
         localStorage.setItem('mk_liked_songs', JSON.stringify(liked));
         updateLikeBtnStatus(music);
         showToast('已收藏到我喜欢的音乐 ❤️');
+        if (window.CloudVault && typeof window.CloudVault.toggleFavorite === 'function') {
+            window.CloudVault.toggleFavorite(music);
+        }
     }
 }
 

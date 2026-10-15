@@ -35,17 +35,17 @@ header("Expires: 0");
     <!-- favicon图标 -->
     <link rel="shortcut icon" href="favicon.ico">
     
-    <!-- jQuery文件 -->
-    <script src="js/jquery.min.js"></script>
+    <!-- jQuery文件 (又拍云 CDN 高速加速) -->
+    <script src="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.min.js"></script>
     
-    <!-- 基础样式表文件 -->
+    <!-- 基础样式表文件 (又拍云 CDN 高速加速) -->
     <link rel="stylesheet" type="text/css" href="css/player.css">
     <link rel="stylesheet" type="text/css" href="css/small.css">
-    <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.min.css">
-    <link rel="stylesheet" href="plugns/layer/skin/default/layer.css?v=3.0.2302" id="layuicss-skinlayercss">
+    <link rel="stylesheet" type="text/css" href="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.min.css">
+    <link rel="stylesheet" href="https://tc1.21212121.xyz/asite/assets/vendor/music/layer.css" id="layuicss-skinlayercss">
 
     <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
-    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.2.2">
+    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.2.3">
     <style>
     /* 移动端顶栏与沉浸式毛玻璃系统 */
     :root {
@@ -196,8 +196,13 @@ header("Expires: 0");
         <span>小白随身听</span>
     </div>
     <div class="mnav-actions">
-        <a href="../" class="mnav-pill" title="返回全景空间">⌂ 全景空间</a>
-        <a href="https://21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="岁月静好博客">✎ 博客</a>
+        <div class="cloud-account-badge" id="cloud-account-badge" title="网易云云端同步">
+            <img src="images/player_cover.png" class="account-avatar" alt="头像">
+            <span class="account-name">网易云</span>
+            <span class="account-dot"></span>
+        </div>
+        <a href="https://21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="访问岁月静好主博客">博客</a>
+        <a href="https://a.21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="前往站群全景工作台">导航</a>
     </div>
 </header>
 
@@ -325,8 +330,8 @@ header("Expires: 0");
     </div>
 </div>
 
-<!-- layer弹窗插件 -->
-<script src="plugns/layer/layer.js"></script>
+<!-- layer弹窗插件 (又拍云 CDN 高速加速) -->
+<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
 
 <!-- 播放器数据加载模块 -->
 <script src="js/ajax.v2.js"></script>
@@ -341,16 +346,19 @@ header("Expires: 0");
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.v2.js?v=2.2.2"></script>
+<script src="js/functions.v2.js?v=2.3.0"></script>
 
 <!-- 播放器主体功能模块 (包含倍速持久化/时间进度条/红心收藏/快捷键) -->
-<script src="js/player.v2.js?v=2.2.2"></script>
+<script src="js/player.v2.js?v=2.3.0"></script>
 
-<!-- 滚动条美化插件 -->
-<script src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+<!-- 网易云账号与 SQLite 云端数据持久化模块 -->
+<script src="js/cloud-vault.js?v=2.3.0"></script>
 
-<!-- 背景模糊化插件 -->
-<script src="js/background-blur.min.js"></script>
+<!-- 滚动条美化插件 (又拍云 CDN 高速加速) -->
+<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.concat.min.js"></script>
+
+<!-- 背景模糊化插件 (又拍云 CDN 高速加速) -->
+<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/background-blur.min.js"></script>
 
 </body>
 </html>

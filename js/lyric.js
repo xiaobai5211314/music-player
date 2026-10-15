@@ -34,7 +34,16 @@ function lyricCallback(str, id) {
     for(var k in rem.lyric){
         var txt = rem.lyric[k];
         if(!txt) txt = "&nbsp;";
-        var li = $("<li data-no='"+i+"' class='lrc-item'>"+txt+"</li>");
+        
+        // 1. 彻底过滤各大平台的法律/AI免责声明与翻唱翻录禁令噪点，恢复纯净听歌意境
+        if(/(?:未经著作权人许可|严禁以任何方式|不得翻唱|翻录或使用|人工智能.*训练|AI.*训练|模型训练|禁止用于AI)/i.test(txt)) {
+            continue;
+        }
+
+        // 2. 识别歌曲制作人员信息 (作词、作曲、编曲、制作人等)，使用精巧弱化排版
+        var isMeta = /(?:作词|作曲|编曲|制作人|录音|混音|母带|吉他|贝斯|鼓|键盘|弦乐|监制|企划|统筹|SP:|OP:|发行|推广)/i.test(txt);
+        var cls = 'lrc-item' + (isMeta ? ' lrc-meta' : '');
+        var li = $("<li data-no='"+i+"' class='"+cls+"'>"+txt+"</li>");
         lyricArea.append(li);
         i++;
     }

@@ -43,63 +43,85 @@ body {
     background: radial-gradient(circle at 50% 20%, #201e1a 0%, #141413 65%, #0c0c0b 100%) !important;
 }
 
-/* 顶部浮动胶囊导航按钮 */
-.back-home-float, .back-blog-float {
+/* ==============================================================
+ * 顶部一体化导航条 (Header Bar) - Claude Code 典雅暗黑毛玻璃系统
+ * ============================================================== */
+.claude-header-bar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 52px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 16px !important;
+    background: rgba(20, 20, 19, 0.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid var(--claude-border) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+    z-index: 9999 !important;
+    box-sizing: border-box !important;
+}
+
+/* 左侧：微型品牌与极简低对比度外链 */
+.header-left-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-shrink: 0 !important;
+}
+
+.header-brand-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--claude-text-primary) !important;
+    letter-spacing: 0.3px !important;
+    user-select: none !important;
+    margin-right: 2px !important;
+}
+
+.header-brand-icon {
+    width: 16px !important;
+    height: 16px !important;
+    color: var(--claude-terracotta) !important;
+}
+
+.header-sub-link {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 7px !important;
-    padding: 7px 15px !important;
-    background: rgba(28, 27, 24, 0.75) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid var(--claude-border) !important;
+    gap: 4px !important;
+    padding: 3px 8px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(232, 230, 220, 0.08) !important;
     border-radius: var(--claude-radius-pill) !important;
-    color: var(--claude-text-secondary) !important;
-    font-size: 13px !important;
+    color: var(--claude-text-muted) !important;
+    font-size: 11px !important;
     font-weight: 500 !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    text-decoration: none !important;
     transition: var(--claude-transition) !important;
 }
 
-.back-home-float:hover, .back-blog-float:hover {
-    background: rgba(38, 36, 32, 0.95) !important;
-    border-color: var(--claude-border-hover) !important;
+.header-sub-link:hover {
     color: var(--claude-text-primary) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--claude-border-hover) !important;
 }
 
-.back-blog-float {
-    left: 122px !important;
-    color: var(--claude-terracotta) !important;
-    border-color: rgba(217, 119, 87, 0.25) !important;
-}
-
-.back-blog-float:hover {
-    color: #fff !important;
-    background: var(--claude-terracotta) !important;
-    border-color: var(--claude-terracotta) !important;
-}
-
-/* 顶部 Tab 分段控制器 (Segmented Control) - 精致胶囊紧凑包裹，绝不横向拉伸穿透封面 */
-.btn-bar {
-    position: absolute !important;
-    top: 14px !important;
-    left: 10px !important;
-    right: auto !important;
-    width: auto !important;
-    height: 38px !important;
-    border: none !important;
-    z-index: 99 !important;
+/* 中间：Tab 分段控制器 */
+.header-tab-group {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 !important;
 }
 
 .btn-box {
     position: relative !important;
-    top: auto !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: auto !important;
     display: inline-flex !important;
     align-items: center !important;
     gap: 4px !important;
@@ -109,18 +131,18 @@ body {
     -webkit-backdrop-filter: blur(16px) !important;
     border: 1px solid var(--claude-border) !important;
     border-radius: var(--claude-radius-pill) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
 }
 
 .btn-box .btn {
-    height: 30px !important;
-    line-height: 30px !important;
-    padding: 0 15px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    padding: 0 14px !important;
     background: transparent !important;
     border: none !important;
     border-radius: var(--claude-radius-pill) !important;
     color: var(--claude-text-secondary) !important;
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     font-weight: 500 !important;
     cursor: pointer !important;
     transition: var(--claude-transition) !important;
@@ -137,7 +159,279 @@ body {
     background: var(--claude-terracotta) !important;
     color: #ffffff !important;
     font-weight: 600 !important;
-    box-shadow: 0 2px 10px var(--claude-terracotta-glow) !important;
+    box-shadow: 0 2px 8px var(--claude-terracotta-glow) !important;
+}
+
+/* 右侧：网易云云端持久化账户徽章 (SQLite) */
+.header-right-group {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-shrink: 0 !important;
+}
+
+.cloud-account-badge {
+    height: 28px !important;
+    padding: 0 10px 0 4px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    color: var(--claude-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    transition: var(--claude-transition) !important;
+}
+
+.cloud-account-badge:hover {
+    color: var(--claude-text-primary) !important;
+    border-color: var(--claude-border-hover) !important;
+    background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.cloud-account-badge.is-bound {
+    border-color: rgba(217, 119, 87, 0.4) !important;
+    background: rgba(217, 119, 87, 0.1) !important;
+    color: #f5f4ef !important;
+}
+
+.cloud-account-badge .account-avatar {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.cloud-account-badge .account-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background: #6b6961 !important;
+    transition: var(--claude-transition) !important;
+}
+
+.cloud-account-badge.is-bound .account-dot {
+    background: #4ade80 !important;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.6) !important;
+}
+
+/* Claude 风格弹窗系统 (SQLite 绑定 / 网易云用户卡片) */
+.layui-layer.claude-layer-skin {
+    background: rgba(24, 23, 20, 0.98) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-card) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65) !important;
+    overflow: hidden !important;
+}
+
+.claude-modal-box {
+    padding: 22px !important;
+    color: var(--claude-text-primary) !important;
+    font-family: var(--claude-font) !important;
+}
+
+.claude-modal-head {
+    text-align: center !important;
+    margin-bottom: 18px !important;
+}
+
+.claude-modal-head .modal-icon {
+    font-size: 30px !important;
+    margin-bottom: 6px !important;
+}
+
+.claude-modal-head .modal-title {
+    font-size: 16.5px !important;
+    font-weight: 600 !important;
+    color: var(--claude-text-primary) !important;
+    margin-bottom: 4px !important;
+}
+
+.claude-modal-head .modal-subtitle {
+    font-size: 11.5px !important;
+    color: var(--claude-text-muted) !important;
+    line-height: 1.5 !important;
+}
+
+.modal-input-label {
+    display: block !important;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    color: var(--claude-text-secondary) !important;
+    margin-bottom: 6px !important;
+}
+
+.modal-input-wrap {
+    display: flex !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+}
+
+.claude-modal-input {
+    flex: 1 !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-sm) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    outline: none !important;
+    transition: var(--claude-transition) !important;
+}
+
+.claude-modal-input:focus {
+    border-color: var(--claude-terracotta) !important;
+    box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.25) !important;
+}
+
+.claude-modal-submit-btn {
+    height: 36px !important;
+    padding: 0 16px !important;
+    background: var(--claude-terracotta) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--claude-radius-sm) !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: var(--claude-transition) !important;
+}
+
+.claude-modal-submit-btn:hover {
+    background: var(--claude-terracotta-hover) !important;
+    box-shadow: 0 4px 12px var(--claude-terracotta-glow) !important;
+}
+
+.modal-tip-box {
+    padding: 10px 12px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: var(--claude-radius-sm) !important;
+    font-size: 11px !important;
+    color: var(--claude-text-muted) !important;
+    line-height: 1.6 !important;
+}
+
+.modal-tip-box code {
+    color: var(--claude-terracotta) !important;
+    background: rgba(217, 119, 87, 0.12) !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+}
+
+/* 用户状态卡片 */
+.user-card-avatar-wrap {
+    position: relative !important;
+    display: inline-block !important;
+    margin-bottom: 6px !important;
+}
+
+.user-card-avatar {
+    width: 60px !important;
+    height: 60px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid var(--claude-terracotta) !important;
+    box-shadow: 0 4px 16px var(--claude-terracotta-glow) !important;
+}
+
+.user-card-status-dot {
+    position: absolute !important;
+    bottom: 2px !important;
+    right: 2px !important;
+    width: 10px !important;
+    height: 10px !important;
+    background: #4ade80 !important;
+    border: 2px solid #181714 !important;
+    border-radius: 50% !important;
+}
+
+.user-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+}
+
+.user-stat-card {
+    padding: 10px 4px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: var(--claude-radius-sm) !important;
+    text-align: center !important;
+}
+
+.user-stat-card .stat-num {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    color: var(--claude-terracotta) !important;
+}
+
+.user-stat-card .stat-label {
+    font-size: 10.5px !important;
+    color: var(--claude-text-muted) !important;
+    margin-top: 2px !important;
+}
+
+.user-action-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 7px !important;
+}
+
+.claude-card-btn {
+    height: 34px !important;
+    border-radius: var(--claude-radius-sm) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    border: 1px solid transparent !important;
+    transition: var(--claude-transition) !important;
+}
+
+.claude-card-btn.primary {
+    background: rgba(217, 119, 87, 0.15) !important;
+    border-color: rgba(217, 119, 87, 0.4) !important;
+    color: #ff9b7a !important;
+}
+
+.claude-card-btn.primary:hover {
+    background: var(--claude-terracotta) !important;
+    color: #fff !important;
+}
+
+.claude-card-btn.secondary {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: var(--claude-border) !important;
+    color: var(--claude-text-secondary) !important;
+}
+
+.claude-card-btn.secondary:hover {
+    color: var(--claude-text-primary) !important;
+    background: var(--claude-surface-hover) !important;
+}
+
+.claude-card-btn.danger {
+    background: transparent !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+}
+
+.claude-card-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: #ef4444 !important;
 }
 
 .btn-box .active:after {
@@ -146,8 +440,9 @@ body {
 
 /* 主数据展示区：高质感卡片排版 */
 .center {
-    top: 64px !important;
-    bottom: 84px !important;
+    top: 52px !important;
+    bottom: 80px !important;
+
 }
 
 .data-area {
@@ -246,6 +541,32 @@ body {
     box-sizing: border-box !important;
 }
 
+/* 歌曲制作人/宣发信息等元数据：沉静弱化，不干扰正文听歌 */
+#lyric li.lrc-meta {
+    font-size: 11.5px !important;
+    line-height: 22px !important;
+    height: 22px !important;
+    color: var(--claude-text-muted) !important;
+    opacity: 0.35 !important;
+    font-weight: 400 !important;
+}
+
+#lyric li.lrc-meta.lplaying,
+#lyric li.lrc-meta.lrc-current {
+    font-size: 12.5px !important;
+    color: var(--claude-text-secondary) !important;
+    opacity: 0.8 !important;
+    text-shadow: none !important;
+    transform: none !important;
+}
+
+.lyric-tip {
+    color: var(--claude-text-muted) !important;
+    font-size: 13.5px !important;
+    opacity: 0.65 !important;
+    letter-spacing: 0.5px !important;
+}
+
 #lyric li.lplaying,
 #lyric li.lrc-current {
     color: var(--claude-terracotta) !important;
@@ -255,6 +576,7 @@ body {
     text-shadow: 0 0 16px var(--claude-terracotta-glow) !important;
     transform: scale(1.05);
 }
+
 
 /* ==============================================================
  * 网易云音乐 × Claude 现代底栏播放控制器
@@ -456,26 +778,37 @@ body {
     transform: scale(1.08) !important;
 }
 
-/* 核心播放/暂停大圆钮 */
+/* 核心播放/暂停大圆钮 (纯 CSS 矢量几何绘制，彻底淘汰破损雪碧图切片) */
 .player-controls .btn-play {
-    width: 38px !important;
-    height: 38px !important;
-    background-color: var(--claude-terracotta) !important;
+    width: 40px !important;
+    height: 40px !important;
+    background: var(--claude-terracotta) !important;
+    background-image: none !important; /* 关键：彻底清除原版背景图片切片 */
     border-radius: 50% !important;
     position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     left: auto !important;
     right: auto !important;
     margin: 0 4px !important;
     box-shadow: 0 4px 16px var(--claude-terracotta-glow) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    cursor: pointer !important;
+    transition: var(--claude-transition) !important;
 }
 
 .player-controls .btn-play:hover {
-    background-color: var(--claude-terracotta-hover) !important;
-    transform: scale(1.1) !important;
-    box-shadow: 0 6px 20px var(--claude-terracotta-glow) !important;
+    background: var(--claude-terracotta-hover) !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 6px 22px var(--claude-terracotta-glow) !important;
 }
 
+.player-controls .btn-play:active {
+    transform: scale(0.94) !important;
+}
+
+/* 正在播放中（点击暂停）：纯白双竖线暂停图标 */
 .player-controls .btn-play:after {
     content: '' !important;
     display: block !important;
@@ -483,14 +816,34 @@ body {
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    width: 14px !important;
-    height: 16px !important;
-    background-image: url("../images/player.png") !important;
-    background-position: 0 0 !important;
+    width: 13px !important;
+    height: 14px !important;
+    background: transparent !important;
+    background-image: none !important;
+    border-left: 4px solid #ffffff !important;
+    border-right: 4px solid #ffffff !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    box-sizing: border-box !important;
+    border-radius: 1px !important;
 }
 
+/* 处于暂停中（点击播放）：纯白三角形播放图标，光学微偏右1px视觉绝对居中 */
 .player-controls .btn-play.btn-state-paused:after {
-    background-position: -30px 0 !important;
+    content: '' !important;
+    display: block !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-38%, -50%) !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    border-style: solid !important;
+    border-width: 7px 0 7px 12px !important;
+    border-color: transparent transparent transparent #ffffff !important;
+    border-radius: 1.5px !important;
 }
 
 /* 歌词视窗切换按钮：高质感微型胶囊 */
@@ -659,13 +1012,21 @@ body {
 
 /* --- 3. 右侧高级播放工具箱 (倍速 / 音源 / 音量 / 歌单) --- */
 .footer-right {
-    flex: 0 1 270px !important;
-    min-width: 180px !important;
+    flex: 0 0 auto !important;
+    min-width: 290px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: flex-end !important;
     gap: 8px !important;
 }
+
+.speed-control-box,
+.source-capsule-btn,
+.footer-vol-wrap,
+.btn-playlist-toggle {
+    flex-shrink: 0 !important;
+}
+
 
 /* 倍速胶囊按钮 */
 .speed-control-box {
@@ -766,7 +1127,7 @@ body {
     color: var(--claude-terracotta) !important;
 }
 
-/* 当前音源胶囊 */
+/* 当前音源胶囊 (强制单行不折行，避免"全豆\n要"难看换行) */
 .source-capsule-btn {
     height: 28px !important;
     padding: 0 10px !important;
@@ -780,7 +1141,17 @@ body {
     display: inline-flex !important;
     align-items: center !important;
     gap: 6px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
     transition: var(--claude-transition) !important;
+}
+
+.source-capsule-btn span {
+    white-space: nowrap !important;
+    display: inline-block !important;
+    max-width: 90px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .source-capsule-btn:hover {
@@ -943,19 +1314,25 @@ body {
     }
     .footer-right {
         gap: 6px !important;
-        flex: 0 1 230px !important;
+        flex: 0 0 auto !important;
+        min-width: 270px !important;
     }
     .volume-slider-box {
-        width: 50px !important;
+        width: 44px !important;
     }
     .source-capsule-btn {
-        padding: 0 6px !important;
-        font-size: 11px !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
     }
     .speed-capsule-btn {
-        padding: 0 6px !important;
-        font-size: 11px !important;
+        padding: 0 8px !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
     }
+
 }
 
 /* 移动端排版自适应 (< 768px) - 网易云紧凑双层底栏与高质感触控 */

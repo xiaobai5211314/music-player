@@ -39,8 +39,8 @@ body{
     <!-- favicon图标 -->
     <link rel="shortcut icon" href="favicon.ico">
     
-    <!-- jQuery文件 -->
-    <script src="js/jquery.min.js"></script>
+    <!-- jQuery文件 (又拍云 CDN 高速加速) -->
+    <script src="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.min.js"></script>
     
     <!-- 播放器样式表文件 -->
     <link rel="stylesheet" type="text/css" href="css/player.css">
@@ -48,36 +48,57 @@ body{
     <!-- 小屏幕样式修复 -->
     <link rel="stylesheet" type="text/css" href="css/small.css">
     
-    <!-- 滚动条美化样式文件 -->
-    <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.min.css">
+    <!-- 滚动条美化样式文件 (又拍云 CDN 高速加速) -->
+    <link rel="stylesheet" type="text/css" href="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.min.css">
     
-    <!-- layer弹窗插件样式文件 -->
-    <link rel="stylesheet" href="plugns/layer/skin/default/layer.css?v=3.0.2302" id="layuicss-skinlayercss">
+    <!-- layer弹窗插件样式文件 (又拍云 CDN 高速加速) -->
+    <link rel="stylesheet" href="https://tc1.21212121.xyz/asite/assets/vendor/music/layer.css" id="layuicss-skinlayercss">
 
     <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
-    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.2.2">
+    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.3.0">
 </head>
 <body>
-<a href="../" class="back-home-float" title="返回全景工作台">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    <span>全景主站</span>
-</a>
-<a href="https://21212121.xyz" target="_blank" rel="noopener" class="back-blog-float" title="访问岁月静好主博客">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-    <span>博客主站</span>
-</a>
+<!-- 顶部现代化一体化导航与云端账户控制台 (Claude Code 风格) -->
+<header class="claude-header-bar">
+    <div class="header-left-group">
+        <div class="header-brand-title">
+            <svg class="header-brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>小白音乐</span>
+        </div>
+        <a href="https://21212121.xyz" target="_blank" rel="noopener" class="header-sub-link" title="访问岁月静好 · 个人主博客">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>博客</span>
+        </a>
+        <a href="https://a.21212121.xyz" target="_blank" rel="noopener" class="header-sub-link" title="站群全景工作台">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+            <span>导航</span>
+        </a>
+    </div>
+
+    <!-- tab 核心分段控制器 -->
+    <div class="header-tab-group">
+        <div class="btn-box" id="btn-area">
+            <span class="btn" data-action="player" hidden>播放器</span>
+            <span class="btn active" data-action="playing" title="正在播放列表">正在播放</span>
+            <span class="btn" data-action="sheet" title="音乐播放列表">歌单列表</span>
+            <span class="btn" data-action="search" title="点击搜索音乐">歌曲搜索</span>
+        </div>
+    </div>
+
+    <!-- 右侧网易云云端持久化账户徽章 (SQLite) -->
+    <div class="header-right-group">
+        <div class="cloud-account-badge" id="cloud-account-badge" title="网易云音乐云端同步 (SQLite)">
+            <img src="images/player_cover.png" class="account-avatar" id="account-avatar" alt="头像">
+            <span class="account-name" id="account-name">绑定网易云</span>
+            <span class="account-dot" id="account-dot"></span>
+        </div>
+    </div>
+</header>
+
 <!-- 中间主体区域 -->
 <div class="center">
     <div class="container">
-        <div class="btn-bar">
-            <!-- tab按钮区 -->
-            <div class="btn-box" id="btn-area">
-                <span class="btn" data-action="player" hidden>播放器</span>
-                <span class="btn" data-action="playing" title="正在播放列表">正在播放</span>
-                <span class="btn" data-action="sheet" title="音乐播放列表">播放列表</span>
-                <span class="btn" data-action="search" title="点击搜索音乐">歌曲搜索</span>
-            </div>
-        </div>  <!--class="btn-bar"-->
+
         
         <div class="data-area">
             <!--歌曲歌单-->
@@ -189,8 +210,8 @@ body{
     </div>
 </div>
 
-<!-- layer弹窗插件 -->
-<script src="plugns/layer/layer.js"></script>
+<!-- layer弹窗插件 (又拍云 CDN 高速加速) -->
+<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
 
 <!-- 播放器数据加载模块 -->
 <script src="js/ajax.v2.js"></script>
@@ -205,16 +226,19 @@ body{
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.v2.js?v=2.2.2"></script>
+<script src="js/functions.v2.js?v=2.3.0"></script>
 
 <!-- 播放器主体功能模块 -->
-<script src="js/player.v2.js?v=2.2.2"></script>
+<script src="js/player.v2.js?v=2.3.0"></script>
 
-<!-- 滚动条美化插件 -->
-<script src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+<!-- 网易云账号与 SQLite 云端数据持久化模块 -->
+<script src="js/cloud-vault.js?v=2.3.0"></script>
 
-<!-- 背景模糊化插件 -->
-<script src="js/background-blur.min.js"></script>
+<!-- 滚动条美化插件 (又拍云 CDN 高速加速) -->
+<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.concat.min.js"></script>
+
+<!-- 背景模糊化插件 (又拍云 CDN 高速加速) -->
+<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/background-blur.min.js"></script>
 
 </body>
 </html>

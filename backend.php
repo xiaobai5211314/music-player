@@ -644,6 +644,287 @@ function userlist_netease($uid)
 }
 
 /* ---------------------------------------------------------
+ * 7.5 云端数据持久化引擎 (SQLite / JSON 双模式自愈存储)
+ * --------------------------------------------------------- */
+class MusicStorage
+{
+    private static $pdo = null;
+    private static $useSqlite = false;
+    private static $jsonFile = __DIR__ . '/data/cloud_data.json';
+
+    public static function init()
+    {
+        if (!is_dir(__DIR__ . '/data')) {
+            @mkdir(__DIR__ . '/data', 0755, true);
+        }
+        if (class_exists('PDO') && in_array('sqlite', PDO::getAvailableDrivers())) {
+            try {
+                $dbFile = __DIR__ . '/data/music_vault.db';
+                self::$pdo = new PDO('sqlite:' . $dbFile);
+                self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                self::$pdo->exec("
+                    CREATE TABLE IF NOT EXISTS cloud_users (
+                        uid TEXT PRIMARY KEY,
+                        nickname TEXT,
+                        avatar TEXT,
+                        updated_at INTEGER
+                    );
+                    CREATE TABLE IF NOT EXISTS cloud_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        uid TEXT,
+                        song_id TEXT,
+                        song_name TEXT,
+                        artist TEXT,
+                        album TEXT,
+                        source TEXT,
+                        pic TEXT,
+                        played_at INTEGER
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_hist_uid_time ON cloud_history(uid, played_at);
+                    CREATE TABLE IF NOT EXISTS cloud_favorites (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        uid TEXT,
+                        song_id TEXT,
+                        song_name TEXT,
+                        artist TEXT,
+                        album TEXT,
+                        source TEXT,
+                        pic TEXT,
+                        created_at INTEGER,
+                        UNIQUE(uid, song_id, source)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_fav_uid ON cloud_favorites(uid);
+                ");
+                self::$useSqlite = true;
+                return;
+            } catch (Exception $e) {
+                self::$useSqlite = false;
+            }
+        }
+        self::$useSqlite = false;
+    }
+
+    private static function getJsonData()
+    {
+        if (!file_exists(self::$jsonFile)) {
+            return ['users' => [], 'history' => [], 'favorites' => []];
+        }
+        $data = @json_decode(file_get_contents(self::$jsonFile), true);
+        return is_array($data) ? $data : ['users' => [], 'history' => [], 'favorites' => []];
+    }
+
+    private static function saveJsonData($data)
+    {
+        @file_put_contents(self::$jsonFile, json_encode($data, JSON_UNESCAPED_UNICODE));
+    }
+
+    public static function syncUser($uid, $nickname = '', $avatar = '')
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '') return null;
+        $now = time();
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("INSERT INTO cloud_users (uid, nickname, avatar, updated_at) 
+                VALUES (:uid, :nickname, :avatar, :updated_at)
+                ON CONFLICT(uid) DO UPDATE SET 
+                nickname = CASE WHEN :nickname != '' THEN :nickname ELSE nickname END,
+                avatar = CASE WHEN :avatar != '' THEN :avatar ELSE avatar END,
+                updated_at = :updated_at");
+            $stmt->execute([':uid' => $uid, ':nickname' => $nickname, ':avatar' => $avatar, ':updated_at' => $now]);
+            $sel = self::$pdo->prepare("SELECT * FROM cloud_users WHERE uid = :uid LIMIT 1");
+            $sel->execute([':uid' => $uid]);
+            return $sel->fetch(PDO::FETCH_ASSOC);
+        } else {
+            $d = self::getJsonData();
+            $curr = isset($d['users'][$uid]) ? $d['users'][$uid] : ['uid' => $uid, 'nickname' => '', 'avatar' => '', 'updated_at' => $now];
+            if ($nickname !== '') $curr['nickname'] = $nickname;
+            if ($avatar !== '') $curr['avatar'] = $avatar;
+            $curr['updated_at'] = $now;
+            $d['users'][$uid] = $curr;
+            self::saveJsonData($d);
+            return $curr;
+        }
+    }
+
+    public static function recordHistory($uid, $song)
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '' || empty($song['id'])) return false;
+        $now = time();
+        $songId = trim((string)$song['id']);
+        $songName = trim(isset($song['name']) ? (string)$song['name'] : '未知歌曲');
+        $artist = trim(isset($song['artist']) ? (string)$song['artist'] : '群星');
+        $album = trim(isset($song['album']) ? (string)$song['album'] : '');
+        $source = trim(isset($song['source']) ? (string)$song['source'] : 'netease');
+        $pic = trim(isset($song['pic']) ? (string)$song['pic'] : '');
+
+        if (self::$useSqlite && self::$pdo) {
+            $del = self::$pdo->prepare("DELETE FROM cloud_history WHERE uid = :uid AND song_id = :sid AND source = :src");
+            $del->execute([':uid' => $uid, ':sid' => $songId, ':src' => $source]);
+
+            $ins = self::$pdo->prepare("INSERT INTO cloud_history (uid, song_id, song_name, artist, album, source, pic, played_at) VALUES (:uid, :sid, :name, :artist, :album, :src, :pic, :played_at)");
+            $ins->execute([
+                ':uid' => $uid,
+                ':sid' => $songId,
+                ':name' => $songName,
+                ':artist' => $artist,
+                ':album' => $album,
+                ':src' => $source,
+                ':pic' => $pic,
+                ':played_at' => $now
+            ]);
+
+            self::$pdo->exec("DELETE FROM cloud_history WHERE id NOT IN (SELECT id FROM cloud_history WHERE uid = " . self::$pdo->quote($uid) . " ORDER BY played_at DESC LIMIT 300) AND uid = " . self::$pdo->quote($uid));
+            return true;
+        } else {
+            $d = self::getJsonData();
+            if (!isset($d['history'][$uid])) $d['history'][$uid] = [];
+            $newList = [];
+            foreach ($d['history'][$uid] as $item) {
+                if ($item['song_id'] == $songId && $item['source'] == $source) continue;
+                $newList[] = $item;
+            }
+            array_unshift($newList, [
+                'id' => time() . mt_rand(100, 999),
+                'uid' => $uid,
+                'song_id' => $songId,
+                'song_name' => $songName,
+                'artist' => $artist,
+                'album' => $album,
+                'source' => $source,
+                'pic' => $pic,
+                'played_at' => $now
+            ]);
+            $d['history'][$uid] = array_slice($newList, 0, 300);
+            self::saveJsonData($d);
+            return true;
+        }
+    }
+
+    public static function getHistory($uid, $limit = 100)
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '') return [];
+        $limit = max(1, min(300, (int)$limit));
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("SELECT song_id as id, song_name as name, artist, album, source, pic, played_at FROM cloud_history WHERE uid = :uid ORDER BY played_at DESC LIMIT :limit");
+            $stmt->bindValue(':uid', $uid, PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $d = self::getJsonData();
+            $items = isset($d['history'][$uid]) ? $d['history'][$uid] : [];
+            $res = [];
+            foreach (array_slice($items, 0, $limit) as $it) {
+                $res[] = [
+                    'id' => $it['song_id'],
+                    'name' => $it['song_name'],
+                    'artist' => $it['artist'],
+                    'album' => $it['album'],
+                    'source' => $it['source'],
+                    'pic' => $it['pic'],
+                    'played_at' => $it['played_at']
+                ];
+            }
+            return $res;
+        }
+    }
+
+    public static function toggleFavorite($uid, $song)
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '' || empty($song['id'])) return ['liked' => false];
+        $now = time();
+        $songId = trim((string)$song['id']);
+        $songName = trim(isset($song['name']) ? (string)$song['name'] : '未知歌曲');
+        $artist = trim(isset($song['artist']) ? (string)$song['artist'] : '群星');
+        $album = trim(isset($song['album']) ? (string)$song['album'] : '');
+        $source = trim(isset($song['source']) ? (string)$song['source'] : 'netease');
+        $pic = trim(isset($song['pic']) ? (string)$song['pic'] : '');
+
+        if (self::$useSqlite && self::$pdo) {
+            $chk = self::$pdo->prepare("SELECT id FROM cloud_favorites WHERE uid = :uid AND song_id = :sid AND source = :src LIMIT 1");
+            $chk->execute([':uid' => $uid, ':sid' => $songId, ':src' => $source]);
+            $row = $chk->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $del = self::$pdo->prepare("DELETE FROM cloud_favorites WHERE id = :id");
+                $del->execute([':id' => $row['id']]);
+                return ['liked' => false];
+            } else {
+                $ins = self::$pdo->prepare("INSERT INTO cloud_favorites (uid, song_id, song_name, artist, album, source, pic, created_at) VALUES (:uid, :sid, :name, :artist, :album, :src, :pic, :created_at)");
+                $ins->execute([
+                    ':uid' => $uid,
+                    ':sid' => $songId,
+                    ':name' => $songName,
+                    ':artist' => $artist,
+                    ':album' => $album,
+                    ':src' => $source,
+                    ':pic' => $pic,
+                    ':created_at' => $now
+                ]);
+                return ['liked' => true];
+            }
+        } else {
+            $d = self::getJsonData();
+            if (!isset($d['favorites'][$uid])) $d['favorites'][$uid] = [];
+            $foundIdx = -1;
+            foreach ($d['favorites'][$uid] as $idx => $it) {
+                if ($it['song_id'] == $songId && $it['source'] == $source) {
+                    $foundIdx = $idx;
+                    break;
+                }
+            }
+            if ($foundIdx >= 0) {
+                array_splice($d['favorites'][$uid], $foundIdx, 1);
+                self::saveJsonData($d);
+                return ['liked' => false];
+            } else {
+                array_unshift($d['favorites'][$uid], [
+                    'song_id' => $songId,
+                    'song_name' => $songName,
+                    'artist' => $artist,
+                    'album' => $album,
+                    'source' => $source,
+                    'pic' => $pic,
+                    'created_at' => $now
+                ]);
+                self::saveJsonData($d);
+                return ['liked' => true];
+            }
+        }
+    }
+
+    public static function getFavorites($uid)
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '') return [];
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("SELECT song_id as id, song_name as name, artist, album, source, pic, created_at FROM cloud_favorites WHERE uid = :uid ORDER BY created_at DESC");
+            $stmt->execute([':uid' => $uid]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $d = self::getJsonData();
+            $items = isset($d['favorites'][$uid]) ? $d['favorites'][$uid] : [];
+            $res = [];
+            foreach ($items as $it) {
+                $res[] = [
+                    'id' => $it['song_id'],
+                    'name' => $it['song_name'],
+                    'artist' => $it['artist'],
+                    'album' => $it['album'],
+                    'source' => $it['source'],
+                    'pic' => $it['pic'],
+                    'created_at' => $it['created_at']
+                ];
+            }
+            return $res;
+        }
+    }
+}
+MusicStorage::init();
+
+/* ---------------------------------------------------------
  * 8. 路由总分发
  * --------------------------------------------------------- */
 $type   = isset($_REQUEST['types']) ? trim($_REQUEST['types']) : '';
@@ -742,11 +1023,56 @@ switch ($type) {
         }
         out_json(['lyric' => $l]);
 
+    // 云端数据持久化支持 (SQLite / JSON 双引擎)
+    case 'sync_account':
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $nick = isset($_REQUEST['nickname']) ? trim($_REQUEST['nickname']) : '';
+        $avatar = isset($_REQUEST['avatar']) ? trim($_REQUEST['avatar']) : '';
+        if ($uid === '') out_json(['code' => 400, 'msg' => 'UID required']);
+        $user = MusicStorage::syncUser($uid, $nick, $avatar);
+        $favCount = count(MusicStorage::getFavorites($uid));
+        $histCount = count(MusicStorage::getHistory($uid, 300));
+        out_json([
+            'code' => 200,
+            'user' => $user,
+            'stat' => [
+                'favorites' => $favCount,
+                'history' => $histCount
+            ]
+        ]);
+
+    case 'record_history':
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $songRaw = isset($_REQUEST['song']) ? $_REQUEST['song'] : '';
+        $song = is_array($songRaw) ? $songRaw : json_decode($songRaw, true);
+        if ($uid === '' || empty($song)) out_json(['code' => 400]);
+        $ok = MusicStorage::recordHistory($uid, $song);
+        out_json(['code' => $ok ? 200 : 500]);
+
+    case 'get_history':
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $list = MusicStorage::getHistory($uid, 200);
+        out_json(['code' => 200, 'list' => $list]);
+
+    case 'toggle_favorite':
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $songRaw = isset($_REQUEST['song']) ? $_REQUEST['song'] : '';
+        $song = is_array($songRaw) ? $songRaw : json_decode($songRaw, true);
+        if ($uid === '' || empty($song)) out_json(['code' => 400]);
+        $res = MusicStorage::toggleFavorite($uid, $song);
+        out_json(['code' => 200, 'liked' => $res['liked']]);
+
+    case 'get_favorites':
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $list = MusicStorage::getFavorites($uid);
+        out_json(['code' => 200, 'list' => $list]);
+
     default:
         // 未匹配时返回就绪状态
         out_json([
             'status' => 'ready',
-            'version' => '2.1.0',
-            'endpoints' => ['search', 'playlist', 'userlist', 'url', 'pic', 'lyric', 'proxy', 'stream', 'sources', 'getsource']
+            'version' => '2.2.0',
+            'endpoints' => ['search', 'playlist', 'userlist', 'url', 'pic', 'lyric', 'proxy', 'stream', 'sources', 'getsource', 'sync_account', 'record_history', 'get_history', 'toggle_favorite', 'get_favorites']
         ]);
 }
+
