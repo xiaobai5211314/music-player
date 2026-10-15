@@ -5,7 +5,7 @@
 - **独立二级域名**：`https://music.21212121.xyz`
 - **技术栈**：HTML5 / CSS3 / JavaScript / Meting API
 - **静态资源 CDN 加速**：
-  - 核心第三方依赖库（jQuery、Layer 弹窗、mCustomScrollbar 自定义滚动条、background-blur 背景模糊引擎）全量迁移至又拍云 CDN：`https://tc1.21212121.xyz/asite/assets/vendor/music/`。
+  - 核心第三方依赖库（jQuery、Layer 弹窗、mCustomScrollbar 自定义滚动条、background-blur 背景模糊引擎）全量迁移至又拍云 CDN：`https://guzhicdn.21212121.xyz/asite/assets/vendor/music/`。
 - **生产服务器根目录**：`/www/wwwroot/music.21212121.xyz/`
 - **自动化部署**：通过 GitHub Actions 联动，代码提交至 `main` 分支后自动同步至生产环境。
 

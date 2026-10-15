@@ -34,12 +34,12 @@ header("Expires: 0");
     <meta property="og:title" content="小白在线音乐播放器 - 岁月静好">
     <meta property="og:description" content="极简纯净在线音乐播放器，支持全网音乐搜索、播放与歌词同步。">
     <meta property="og:url" content="https://music.21212121.xyz/">
-    <meta property="og:image" content="https://tc1.21212121.xyz/asite/assets/images/521.png">
+    <meta property="og:image" content="https://guzhicdn.21212121.xyz/asite/assets/images/521.png">
     <meta property="og:site_name" content="岁月静好">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="小白在线音乐播放器 - 岁月静好">
     <meta name="twitter:description" content="极简纯净在线音乐播放器，支持全网音乐搜索、播放与歌词同步。">
-    <meta name="twitter:image" content="https://tc1.21212121.xyz/asite/assets/images/521.png">
+    <meta name="twitter:image" content="https://guzhicdn.21212121.xyz/asite/assets/images/521.png">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -70,7 +70,7 @@ body{
     <link rel="shortcut icon" href="favicon.ico">
     
     <!-- jQuery文件 (又拍云 CDN 高速加速) -->
-    <script src="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.min.js"></script>
+    <script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/jquery.min.js"></script>
     
     <!-- 播放器样式表文件 -->
     <link rel="stylesheet" type="text/css" href="css/player.css">
@@ -79,10 +79,10 @@ body{
     <link rel="stylesheet" type="text/css" href="css/small.css">
     
     <!-- 滚动条美化样式文件 (又拍云 CDN 高速加速) -->
-    <link rel="stylesheet" type="text/css" href="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.min.css">
+    <link rel="stylesheet" type="text/css" href="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.min.css">
     
     <!-- layer弹窗插件样式文件 (又拍云 CDN 高速加速) -->
-    <link rel="stylesheet" href="https://tc1.21212121.xyz/asite/assets/vendor/music/layer.css" id="layuicss-skinlayercss">
+    <link rel="stylesheet" href="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.css" id="layuicss-skinlayercss">
 
     <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
     <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.3.0">
@@ -241,7 +241,7 @@ body{
 </div>
 
 <!-- layer弹窗插件 (又拍云 CDN 高速加速) -->
-<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
+<script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
 
 <!-- 播放器数据加载模块 -->
 <script src="js/ajax.v2.js"></script>
@@ -265,10 +265,10 @@ body{
 <script src="js/cloud-vault.js?v=2.3.0"></script>
 
 <!-- 滚动条美化插件 (又拍云 CDN 高速加速) -->
-<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.concat.min.js"></script>
+<script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.concat.min.js"></script>
 
 <!-- 背景模糊化插件 (又拍云 CDN 高速加速) -->
-<script src="https://tc1.21212121.xyz/asite/assets/vendor/music/background-blur.min.js"></script>
+<script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/background-blur.min.js"></script>
 
 </body>
 </html>
