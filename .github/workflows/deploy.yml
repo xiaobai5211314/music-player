@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-music-player
+  group: deploy-music
   cancel-in-progress: true
 
 jobs:
@@ -32,6 +32,7 @@ jobs:
           rsync -avzc --no-perms --no-owner --no-group \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.SERVER_PORT || 22 }} -o StrictHostKeyChecking=no" \
             --exclude='.git*' \
+            --exclude='.user.ini' \
             --exclude='*.log' \
             ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/www/wwwroot/music.21212121.xyz/
 
@@ -40,7 +41,9 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.SERVER_PORT || 22 }} -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             set -e
             cd /www/wwwroot/music.21212121.xyz
+            if [ -f .user.ini ]; then chattr -i .user.ini 2>/dev/null || true; fi
             chown -R www:www .
             chmod -R 755 .
+            if [ -f .user.ini ]; then chattr +i .user.ini 2>/dev/null || true; fi
             echo "音乐播放器 自动部署完成！"
           EOF
