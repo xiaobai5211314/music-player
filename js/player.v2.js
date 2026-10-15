@@ -175,14 +175,44 @@ function autoNextMusic() {
     }
 }
 
+// 格式化时间函数 (秒 -> mm:ss)
+function formatTime(sec) {
+    if (isNaN(sec) || sec < 0) return "00:00";
+    sec = Math.floor(sec);
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+}
+
 // 歌曲时间变动回调函数
 function updateProgress(){
+    if(!rem.audio || !rem.audio[0]) return true;
+    var cur = rem.audio[0].currentTime || 0;
+    var dur = rem.audio[0].duration || 0;
+    
+    // 实时更新时间文本
+    $("#music-cur-time").text(formatTime(cur));
+    if (dur > 0) {
+        $("#music-total-time").text(formatTime(dur));
+        // 缓冲进度条
+        try {
+            if (rem.audio[0].buffered && rem.audio[0].buffered.length > 0) {
+                var bufEnd = rem.audio[0].buffered.end(rem.audio[0].buffered.length - 1);
+                var bufPct = Math.min(100, Math.max(0, (bufEnd / dur) * 100));
+                $("#music-progress .mkpgb-buf").css("width", bufPct + "%");
+            }
+        } catch(e){}
+    }
+    
     // 暂停状态不管
     if(rem.paused !== false) return true;
+    
     // 同步进度条
-	music_bar.goto(rem.audio[0].currentTime / rem.audio[0].duration);
+    if (dur > 0) {
+        music_bar.goto(cur / dur);
+    }
     // 同步歌词显示	
-	scrollLyric(rem.audio[0].currentTime);
+    scrollLyric(cur);
 }
 
 // 显示的列表中的某一项点击后的处理函数
@@ -277,6 +307,11 @@ function initAudio() {
     
     // 应用初始音量
     rem.audio[0].volume = volume_bar.percent;
+    // 恢复保存的播放倍速
+    var savedSpeed = playerReaddata('speed');
+    if(savedSpeed) {
+        setPlaybackSpeed(savedSpeed);
+    }
     // 绑定歌曲进度变化事件
     rem.audio[0].addEventListener('timeupdate', updateProgress);   // 更新进度
     rem.audio[0].addEventListener('play', audioPlay); // 开始播放了
@@ -323,6 +358,9 @@ function play(music) {
     try {
         rem.audio[0].pause();
         rem.audio.attr('src', music.url);
+        if(rem.speed && rem.audio[0]) {
+            rem.audio[0].playbackRate = rem.speed;
+        }
         rem.audio[0].play();
     } catch(e) {
         audioErr(); // 调用错误处理函数
@@ -331,6 +369,8 @@ function play(music) {
     
     rem.errCount = 0;   // 连续播放失败的歌曲数归零
     music_bar.goto(0);  // 进度条强制归零
+    $("#music-cur-time").text("00:00");
+    syncFooterSong(music);  // 同步更新底栏歌曲信息与音质徽章
     changeCover(music);    // 更新封面展示
     ajaxLyric(music, lyricCallback);     // ajax加载歌词
     music_bar.lock(false);  // 取消进度条锁定
@@ -392,44 +432,84 @@ mkpgb = function(bar, percent, callback){
 mkpgb.prototype = {
     // 进度条初始化
     init : function(){  
-        var mk = this,mdown = false;
-        // 加载进度条html元素
-        $(mk.bar).html('<div class="mkpgb-bar"></div><div class="mkpgb-cur"></div><div class="mkpgb-dot"></div>');
+        var mk = this, mdown = false;
+        // 加载进度条html元素（带缓冲层和拖拽小点）
+        $(mk.bar).html('<div class="mkpgb-bar"><div class="mkpgb-buf"></div><div class="mkpgb-cur"></div><div class="mkpgb-dot"></div></div>');
         // 获取偏移量
         mk.minLength = $(mk.bar).offset().left; 
         mk.maxLength = $(mk.bar).width() + mk.minLength;
+        
         // 窗口大小改变偏移量重置
         $(window).resize(function(){
-            mk.minLength = $(mk.bar).offset().left; 
-            mk.maxLength = $(mk.bar).width() + mk.minLength;
+            if($(mk.bar).length && $(mk.bar).is(':visible')) {
+                mk.minLength = $(mk.bar).offset().left; 
+                mk.maxLength = $(mk.bar).width() + mk.minLength;
+            }
         });
+        
         // 监听小点的鼠标按下事件
         $(mk.bar + " .mkpgb-dot").mousedown(function(e){
-            e.preventDefault();    // 取消原有事件的默认动作
+            e.preventDefault();
         });
-        // 监听进度条整体的鼠标按下事件
-        $(mk.bar).mousedown(function(e){
-            if(!mk.locked) mdown = true;
-            barMove(e);
+        
+        // 监听进度条整体的鼠标与触摸按下事件
+        $(mk.bar).on('mousedown', function(e){
+            if(!mk.locked) {
+                mdown = true;
+                barMove(e);
+            }
+        }).on('touchstart', function(e){
+            if(!mk.locked && e.originalEvent.touches && e.originalEvent.touches[0]) {
+                mdown = true;
+                barMove(e.originalEvent.touches[0]);
+            }
         });
-        // 监听鼠标移动事件，用于拖动
-        $("html").mousemove(function(e){
-            barMove(e);
+        
+        // 监听移动事件，用于拖动
+        $("html").on('mousemove', function(e){
+            if(mdown) barMove(e);
+        }).on('touchmove', function(e){
+            if(mdown && e.originalEvent.touches && e.originalEvent.touches[0]) {
+                barMove(e.originalEvent.touches[0]);
+                e.preventDefault();
+            }
         });
-        // 监听鼠标弹起事件，用于释放拖动
-        $("html").mouseup(function(e){
+        
+        // 监听弹起事件，用于释放拖动
+        $("html").on('mouseup touchend', function(e){
             mdown = false;
         });
         
+        // 悬浮时间气泡预览 (类似网易云/B站交互)
+        if(mk.bar === "#music-progress") {
+            $(mk.bar).on('mousemove', function(e){
+                if (!rem.audio || !rem.audio[0] || !rem.audio[0].duration) return;
+                var offset = $(mk.bar).offset();
+                var width = $(mk.bar).width();
+                if(!offset || width <= 0) return;
+                var pct = Math.min(1, Math.max(0, (e.clientX - offset.left) / width));
+                var targetTime = rem.audio[0].duration * pct;
+                $("#progress-tooltip").text(formatTime(targetTime)).css('left', (pct * 100) + '%').addClass('show');
+            }).on('mouseleave', function(){
+                $("#progress-tooltip").removeClass('show');
+            });
+        }
+        
         function barMove(e) {
             if(!mdown) return;
+            var offset = $(mk.bar).offset();
+            if(!offset) return;
+            mk.minLength = offset.left;
+            mk.maxLength = $(mk.bar).width() + mk.minLength;
+            var width = mk.maxLength - mk.minLength;
+            if(width <= 0) return;
             var percent = 0;
             if(e.clientX < mk.minLength){ 
                 percent = 0; 
             }else if(e.clientX > mk.maxLength){ 
                 percent = 1;
             }else{  
-                percent = (e.clientX - mk.minLength) / (mk.maxLength - mk.minLength);
+                percent = (e.clientX - mk.minLength) / width;
             }
             mk.callback(percent);
             mk.goto(percent);
@@ -437,7 +517,6 @@ mkpgb.prototype = {
         }
         
         mk.goto(mk.percent);
-        
         return true;
     },
     // 跳转至某处
@@ -461,3 +540,244 @@ mkpgb.prototype = {
         return true;
     }
 };  
+
+/* ==============================================================
+ * 网易云音乐功能系统 × Claude 官方文学极简交互扩展
+ * ============================================================== */
+
+// 1. 浮动 Toast 提示组件
+function showToast(msg) {
+    var $t = $("#claude-toast");
+    if (!$t.length) {
+        $t = $('<div id="claude-toast" class="claude-toast"></div>').appendTo('body');
+    }
+    $t.text(msg).addClass('show');
+    clearTimeout(rem.toastTimer);
+    rem.toastTimer = setTimeout(function(){ $t.removeClass('show'); }, 1500);
+}
+
+// 2. 播放倍速控制 (0.5x ~ 2.0x 动态自适应与持久记忆)
+function setPlaybackSpeed(speed) {
+    speed = parseFloat(speed) || 1.0;
+    rem.speed = speed;
+    if (rem.audio && rem.audio[0]) {
+        rem.audio[0].playbackRate = speed;
+    }
+    playerSavedata('speed', speed);
+    $("#speed-label").text(speed === 1.0 ? '1.0x' : (speed + 'x'));
+    $(".speed-item").removeClass("active");
+    $(".speed-item[data-speed='" + speed + "']").addClass("active");
+    if (speed !== 1.0) {
+        $("#speed-capsule-btn").addClass("active-speed");
+    } else {
+        $("#speed-capsule-btn").removeClass("active-speed");
+    }
+    showToast('播放倍速: ' + speed + 'x');
+}
+
+// 3. 底栏歌曲信息微缩卡片同步
+function syncFooterSong(music) {
+    if (!music) return;
+    $("#footer-cover").attr('src', music.pic || 'images/player_cover.png');
+    $("#footer-song-name").text(music.name || '未知歌曲').attr('title', music.name || '');
+    var artistText = (music.artist || '未知歌手') + (music.album ? (' · ' + music.album) : '');
+    $("#footer-song-artist").text(artistText).attr('title', artistText);
+    
+    // 动态智能音质徽章
+    var badgeText = "HQ 320K";
+    var src = (music.source || '').toLowerCase();
+    if (src === 'netease' || src === 'wy') {
+        badgeText = "SQ 无损";
+    } else if (src === 'tencent' || src === 'tx') {
+        badgeText = "SQ 臻品";
+    } else if (src === 'kugou' || src === 'kg' || src === 'kuwo' || src === 'kw') {
+        badgeText = "Hi-Res";
+    }
+    $("#footer-quality-badge").text(badgeText);
+    
+    // 活跃音源徽章更新
+    var activeSrc = (window.SourceHub && SourceHub.activeSourceId) ? SourceHub.activeSourceId.replace(/\.js$/, '') : '全豆要';
+    $("#active-source-name").text(activeSrc);
+    
+    // 收藏状态更新
+    updateLikeBtnStatus(music);
+    
+    // 播放列表歌曲总数角标
+    if (musicList && musicList[1] && musicList[1].item) {
+        $("#playlist-count-badge").text(musicList[1].item.length);
+    }
+}
+
+// 4. 红心收藏系统 (存储至 localStorage 'mk_liked_songs')
+function getLikedSongs() {
+    try {
+        return JSON.parse(localStorage.getItem('mk_liked_songs') || '[]');
+    } catch(e) {
+        return [];
+    }
+}
+
+function isSongLiked(music) {
+    if (!music || !music.id) return false;
+    var liked = getLikedSongs();
+    var key = music.id + '_' + (music.source || '');
+    return liked.some(function(item){ return item.key === key; });
+}
+
+function updateLikeBtnStatus(music) {
+    if (isSongLiked(music)) {
+        $("#btn-like").addClass("liked").attr('title', '已收藏到我喜欢的音乐 (点击取消)');
+    } else {
+        $("#btn-like").removeClass("liked").attr('title', '点击收藏至我喜欢的音乐');
+    }
+}
+
+function toggleLikeCurrentMusic() {
+    if (rem.playid === undefined || !musicList[1] || !musicList[1].item[rem.playid]) {
+        showToast('当前没有正在播放的歌曲');
+        return;
+    }
+    var music = musicList[1].item[rem.playid];
+    var liked = getLikedSongs();
+    var key = music.id + '_' + (music.source || '');
+    var idx = liked.findIndex(function(item){ return item.key === key; });
+    if (idx >= 0) {
+        liked.splice(idx, 1);
+        localStorage.setItem('mk_liked_songs', JSON.stringify(liked));
+        updateLikeBtnStatus(music);
+        showToast('已从我喜欢的音乐中移除');
+    } else {
+        liked.unshift({
+            key: key,
+            id: music.id,
+            name: music.name,
+            artist: music.artist,
+            album: music.album,
+            source: music.source,
+            pic: music.pic
+        });
+        localStorage.setItem('mk_liked_songs', JSON.stringify(liked));
+        updateLikeBtnStatus(music);
+        showToast('已收藏到我喜欢的音乐 ❤️');
+    }
+}
+
+// 5. 事件绑定与现代化交互响应
+$(function(){
+    // 倍速控制按钮点击
+    $(document).on('click', '#speed-capsule-btn', function(e){
+        e.stopPropagation();
+        $("#speed-menu-dropdown").toggleClass("show");
+    });
+    
+    // 倍速项选择
+    $(document).on('click', '.speed-item', function(e){
+        e.stopPropagation();
+        var speed = $(this).data('speed');
+        setPlaybackSpeed(speed);
+        $("#speed-menu-dropdown").removeClass("show");
+    });
+    
+    // 全局点击自动收起下拉
+    $(document).on('click', function(){
+        $("#speed-menu-dropdown").removeClass("show");
+    });
+    
+    // 音源胶囊快速呼出 4-Tab 音源控制中心
+    $(document).on('click', '#source-capsule-btn', function(){
+        if (window.SourceHub && typeof SourceHub.openModal === 'function') {
+            SourceHub.openModal();
+        } else if (typeof openSourceHubModal === 'function') {
+            openSourceHubModal();
+        } else {
+            layer.msg('音源引擎就绪中...');
+        }
+    });
+    
+    // 收藏按钮点击
+    $(document).on('click', '#btn-like', function(){
+        toggleLikeCurrentMusic();
+    });
+    
+    // 播放列表抽屉开关
+    $(document).on('click', '#btn-playlist-toggle', function(){
+        $(".btn[data-action='playing']").click();
+    });
+    
+    // 歌词视图切换
+    $(document).on('click', '#btn-lyric-toggle, .footer-cover-wrap', function(){
+        if ($("#player").is(":visible") && rem.isMobile) {
+            $(".btn[data-action='playing']").click();
+        } else {
+            $(".btn[data-action='player']").click();
+        }
+    });
+    
+    // 底栏滚轮直接滑动调整音量
+    $(document).on('wheel', '.footer', function(e){
+        e.preventDefault();
+        var delta = e.originalEvent.deltaY;
+        var step = delta > 0 ? -0.05 : 0.05;
+        var newVol = Math.min(1, Math.max(0, volume_bar.percent + step));
+        volume_bar.goto(newVol);
+        vBcallback(newVol);
+        showToast('音量: ' + Math.round(newVol * 100) + '%');
+    });
+    
+    // 全局键盘快捷键 (网易云同款极客操控)
+    $(document).on('keydown', function(e){
+        if ($(e.target).is('input, textarea, select')) return;
+        
+        switch(e.keyCode) {
+            case 32: // 空格键：播放/暂停
+                e.preventDefault();
+                if(rem.paused === true) {
+                    play();
+                    showToast('继续播放');
+                } else {
+                    pause();
+                    showToast('已暂停');
+                }
+                break;
+            case 37: // 左箭头：快退 5 秒
+                e.preventDefault();
+                if (rem.audio && rem.audio[0]) {
+                    rem.audio[0].currentTime = Math.max(0, rem.audio[0].currentTime - 5);
+                    showToast('快退 5s (' + formatTime(rem.audio[0].currentTime) + ')');
+                }
+                break;
+            case 39: // 右箭头：快进 5 秒
+                e.preventDefault();
+                if (rem.audio && rem.audio[0]) {
+                    rem.audio[0].currentTime = Math.min(rem.audio[0].duration || 9999, rem.audio[0].currentTime + 5);
+                    showToast('快进 5s (' + formatTime(rem.audio[0].currentTime) + ')');
+                }
+                break;
+            case 38: // 上箭头：音量加 5%
+                e.preventDefault();
+                var newVolUp = Math.min(1, volume_bar.percent + 0.05);
+                volume_bar.goto(newVolUp);
+                vBcallback(newVolUp);
+                showToast('音量: ' + Math.round(newVolUp * 100) + '%');
+                break;
+            case 40: // 下箭头：音量减 5%
+                e.preventDefault();
+                var newVolDown = Math.max(0, volume_bar.percent - 0.05);
+                volume_bar.goto(newVolDown);
+                vBcallback(newVolDown);
+                showToast('音量: ' + Math.round(newVolDown * 100) + '%');
+                break;
+            case 219: // [ 键：上一首
+                prevMusic();
+                showToast('上一首');
+                break;
+            case 221: // ] 键：下一首
+                nextMusic();
+                showToast('下一首');
+                break;
+            case 77: // M 键：静音切换
+                $(".btn-quiet").click();
+                break;
+        }
+    });
+});  

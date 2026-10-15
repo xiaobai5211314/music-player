@@ -53,66 +53,17 @@ body{
     
     <!-- layer弹窗插件样式文件 -->
     <link rel="stylesheet" href="plugns/layer/skin/default/layer.css?v=3.0.2302" id="layuicss-skinlayercss">
-    <style>
-    .back-home-float {
-        position: fixed;
-        top: 15px;
-        left: 15px;
-        z-index: 999999;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        background: rgba(18, 24, 38, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 999px;
-        color: #fff;
-        text-decoration: none;
-        font-size: 12px;
-        transition: all 0.25s ease;
-    }
-    .back-home-float:hover {
-        background: rgba(59, 130, 246, 0.85);
-        border-color: rgba(255, 255, 255, 0.5);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-    .back-blog-float {
-        position: fixed;
-        top: 15px;
-        left: 115px;
-        z-index: 999999;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        background: rgba(18, 24, 38, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 999px;
-        color: #93c5fd;
-        text-decoration: none;
-        font-size: 12px;
-        transition: all 0.25s ease;
-    }
-    .back-blog-float:hover {
-        background: rgba(37, 99, 235, 0.85);
-        border-color: rgba(255, 255, 255, 0.5);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-    </style>
+
+    <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
+    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.2.0">
 </head>
 <body>
 <a href="../" class="back-home-float" title="返回全景工作台">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     <span>全景主站</span>
 </a>
 <a href="https://21212121.xyz" target="_blank" rel="noopener" class="back-blog-float" title="访问岁月静好主博客">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
     <span>博客主站</span>
 </a>
 <!-- 中间主体区域 -->
@@ -151,34 +102,92 @@ body{
     </div>  <!--class="container"-->
 </div>  <!--class="center"-->
 
-<!-- 播放器底部区域 -->
-<div class="footer">
-    <div class="container">
-        <div class="con-btn">
-            <a href="javascript:;" class="player-btn btn-prev" title="上一首"></a>
-            <a href="javascript:;" class="player-btn btn-play" title="暂停/继续"></a>
-            <a href="javascript:;" class="player-btn btn-next" title="下一首"></a>
-			<a href="javascript:;" class="player-btn btn-order" title="循环控制"></a>
-        </div>  <!--class="con-btn"-->
-        
-        <div class="vol">
-            <div class="quiet">
-                <a href="javascript:;" class="player-btn btn-quiet" title="静音"></a>
+<!-- 播放器底部区域 (Claude × 网易云音乐现代三栏播放底栏) -->
+<div class="footer" id="player-footer">
+    <div class="container footer-container">
+        <!-- 1. 左侧：当前播放歌曲微缩信息卡片 -->
+        <div class="footer-left">
+            <div class="footer-cover-wrap" title="点击切换歌词/播放器视图">
+                <img src="images/player_cover.png" class="footer-cover" id="footer-cover" alt="封面">
+                <div class="footer-cover-overlay">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                </div>
             </div>
-            <div class="volume">
-                <div class="volume-box">  
+            <div class="footer-song-meta">
+                <div class="footer-song-title-row">
+                    <span class="footer-song-name" id="footer-song-name" title="等待播放">小白音乐</span>
+                    <span class="footer-quality-badge" id="footer-quality-badge" title="当前音质">HQ 320K</span>
+                </div>
+                <div class="footer-song-artist" id="footer-song-artist" title="歌手">Enjoy The Music</div>
+            </div>
+            <button type="button" class="footer-icon-btn btn-like" id="btn-like" title="收藏至我喜欢的音乐" aria-label="收藏">
+                <svg class="heart-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+        </div>
+
+        <!-- 2. 中间：控制按钮区 + 时间进度条 (网易云核心控制) -->
+        <div class="footer-center">
+            <!-- 上行：控制按钮 -->
+            <div class="player-controls">
+                <a href="javascript:;" class="player-btn btn-order" id="btn-order" title="循环控制"></a>
+                <a href="javascript:;" class="player-btn btn-prev" title="上一首 (快捷键: [)"></a>
+                <a href="javascript:;" class="player-btn btn-play" id="btn-play" title="播放/暂停 (快捷键: 空格)"></a>
+                <a href="javascript:;" class="player-btn btn-next" title="下一首 (快捷键: ])"></a>
+                <button type="button" class="footer-icon-btn btn-lyric-toggle" id="btn-lyric-toggle" title="纯享全屏歌词 / 返回列表" aria-label="歌词视图">
+                    词
+                </button>
+            </div>
+            <!-- 下行：时间与交互进度条 -->
+            <div class="player-progress-bar-wrap">
+                <span class="time-display current-time" id="music-cur-time">00:00</span>
+                <div class="progress-box" id="main-progress-box">
+                    <div id="music-progress" class="mkpgb-area"></div>
+                    <div class="progress-tooltip" id="progress-tooltip">00:00</div>
+                </div>
+                <span class="time-display total-time" id="music-total-time">00:00</span>
+            </div>
+        </div>
+
+        <!-- 3. 右侧：倍速胶囊 + 当前音源 + 音量 + 播放列表抽屉 -->
+        <div class="footer-right">
+            <!-- 倍速控制胶囊 -->
+            <div class="speed-control-box">
+                <button type="button" class="speed-capsule-btn" id="speed-capsule-btn" title="点击调节播放倍速">
+                    <span id="speed-label">1.0x</span>
+                </button>
+                <div class="speed-menu-dropdown" id="speed-menu-dropdown">
+                    <div class="speed-menu-title">播放倍速</div>
+                    <div class="speed-item" data-speed="0.5">0.5x</div>
+                    <div class="speed-item" data-speed="0.75">0.75x</div>
+                    <div class="speed-item active" data-speed="1.0">1.0x (正常)</div>
+                    <div class="speed-item" data-speed="1.25">1.25x</div>
+                    <div class="speed-item" data-speed="1.5">1.5x</div>
+                    <div class="speed-item" data-speed="2.0">2.0x</div>
+                </div>
+            </div>
+
+            <!-- 当前音源快捷胶囊 -->
+            <button type="button" class="source-capsule-btn" id="source-capsule-btn" title="当前音源：点击切换音源">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span id="active-source-name">全豆要</span>
+            </button>
+
+            <!-- 音量调节 -->
+            <div class="footer-vol-wrap">
+                <a href="javascript:;" class="player-btn btn-quiet" title="静音/恢复 (快捷键: M)"></a>
+                <div class="volume-slider-box">
                     <div id="volume-progress" class="mkpgb-area"></div>
                 </div>
             </div>
-        </div>  <!--class="footer"-->
-        
-        <div class="progress">
-            <div class="progress-box">  
-                <div id="music-progress" class="mkpgb-area"></div>
-            </div>
-        </div>  <!--class="progress"-->
-    </div>  <!--class="container"-->
-</div>  <!--class="footer"-->
+
+            <!-- 当前播放队列按钮 -->
+            <button type="button" class="footer-icon-btn btn-playlist-toggle" id="btn-playlist-toggle" title="正在播放列表">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span class="playlist-count-badge" id="playlist-count-badge">0</span>
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- layer弹窗插件 -->
 <script src="plugns/layer/layer.js"></script>

@@ -1,0 +1,976 @@
+@charset "utf-8";
+/**
+ * Claude Design System × NetEase Player Extension
+ * 全网解析在线音乐播放器 - Anthropic 官网沉静典雅质感与网易云播放功能系统
+ */
+
+:root {
+    --claude-bg: #141413;
+    --claude-surface: #1c1b18;
+    --claude-surface-card: rgba(28, 27, 24, 0.88);
+    --claude-surface-hover: rgba(255, 255, 255, 0.06);
+    --claude-border: rgba(232, 230, 220, 0.12);
+    --claude-border-hover: rgba(232, 230, 220, 0.25);
+    --claude-border-active: rgba(217, 119, 87, 0.4);
+    --claude-text-primary: #faf9f5;
+    --claude-text-secondary: #b0aea5;
+    --claude-text-muted: #73726c;
+    --claude-terracotta: #d97757;
+    --claude-terracotta-hover: #c96442;
+    --claude-terracotta-soft: rgba(217, 119, 87, 0.16);
+    --claude-terracotta-glow: rgba(217, 119, 87, 0.35);
+    --claude-sage: #788c5d;
+    --claude-sage-soft: rgba(120, 140, 93, 0.2);
+    --claude-blue: #6a9bcc;
+    --claude-radius-sm: 6px;
+    --claude-radius-md: 10px;
+    --claude-radius-lg: 14px;
+    --claude-radius-pill: 9999px;
+    --claude-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --claude-transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 全局基础重置与 Claude 暗色质感 */
+html, body {
+    background: #141413 !important;
+    color: var(--claude-text-primary) !important;
+    font-family: var(--claude-font) !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background: radial-gradient(circle at 50% 20%, #201e1a 0%, #141413 65%, #0c0c0b 100%) !important;
+}
+
+/* 顶部浮动胶囊导航按钮 */
+.back-home-float, .back-blog-float {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 7px 15px !important;
+    background: rgba(28, 27, 24, 0.75) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    color: var(--claude-text-secondary) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    transition: var(--claude-transition) !important;
+}
+
+.back-home-float:hover, .back-blog-float:hover {
+    background: rgba(38, 36, 32, 0.95) !important;
+    border-color: var(--claude-border-hover) !important;
+    color: var(--claude-text-primary) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+.back-blog-float {
+    left: 122px !important;
+    color: var(--claude-terracotta) !important;
+    border-color: rgba(217, 119, 87, 0.25) !important;
+}
+
+.back-blog-float:hover {
+    color: #fff !important;
+    background: var(--claude-terracotta) !important;
+    border-color: var(--claude-terracotta) !important;
+}
+
+/* 顶部 Tab 分段控制器 (Segmented Control) */
+.btn-bar {
+    top: 15px !important;
+    right: 20px !important;
+    height: 42px !important;
+    border: none !important;
+    z-index: 99 !important;
+}
+
+.btn-box {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 4px !important;
+    background: rgba(28, 27, 24, 0.8) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.btn-box .btn {
+    height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 16px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: var(--claude-radius-pill) !important;
+    color: var(--claude-text-secondary) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: var(--claude-transition) !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+.btn-box .btn:hover {
+    color: var(--claude-text-primary) !important;
+    background: var(--claude-surface-hover) !important;
+}
+
+.btn-box .btn.active {
+    background: var(--claude-terracotta) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 10px var(--claude-terracotta-glow) !important;
+}
+
+.btn-box .active:after {
+    display: none !important;
+}
+
+/* 主数据展示区：高质感卡片排版 */
+.center {
+    top: 64px !important;
+    bottom: 84px !important;
+}
+
+.data-area {
+    background: transparent !important;
+    border: none !important;
+}
+
+.list-item {
+    border-bottom: 1px solid rgba(232, 230, 220, 0.05) !important;
+    color: var(--claude-text-secondary) !important;
+    transition: var(--claude-transition) !important;
+    border-radius: var(--claude-radius-sm) !important;
+    margin-bottom: 2px !important;
+}
+
+.list-item:hover {
+    background: rgba(255, 255, 255, 0.035) !important;
+    color: var(--claude-text-primary) !important;
+}
+
+.list-head {
+    border-bottom: 1px solid var(--claude-border) !important;
+    color: var(--claude-text-muted) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* 正在播放的条目 - 沉静陶土红与微光声波律动 */
+.list-item.list-playing {
+    background: var(--claude-terracotta-soft) !important;
+    color: var(--claude-text-primary) !important;
+    border-left: 3px solid var(--claude-terracotta) !important;
+    font-weight: 500 !important;
+}
+
+.list-item.list-playing .music-name {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.list-item.list-playing .auth-name {
+    color: var(--claude-terracotta) !important;
+}
+
+/* 右侧黑胶唱片与歌词呈现 */
+.player .cover {
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.7) !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    overflow: hidden !important;
+    transition: var(--claude-transition) !important;
+}
+
+.player .cover:hover {
+    transform: scale(1.02);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8) !important;
+}
+
+.player .lyric {
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+#lyric li {
+    color: var(--claude-text-muted) !important;
+    font-size: 14px !important;
+    transition: var(--claude-transition) !important;
+    padding: 8px 0 !important;
+    opacity: 0.6 !important;
+}
+
+#lyric li.lrc-current {
+    color: var(--claude-sage) !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+    text-shadow: 0 0 20px rgba(120, 140, 93, 0.4) !important;
+    transform: scale(1.04);
+}
+
+/* ==============================================================
+ * 网易云音乐 × Claude 现代底栏播放控制器
+ * ============================================================== */
+.footer {
+    height: 80px !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    position: fixed !important;
+    z-index: 9999 !important;
+    background: rgba(20, 20, 19, 0.92) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    border-top: 1px solid var(--claude-border) !important;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+.footer-container {
+    height: 100% !important;
+    max-width: 1360px !important;
+    margin: 0 auto !important;
+    padding: 0 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+}
+
+/* --- 1. 左侧歌曲微缩卡片 --- */
+.footer-left {
+    flex: 0 0 260px !important;
+    max-width: 280px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.footer-cover-wrap {
+    position: relative !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.footer-cover {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    transition: var(--claude-transition) !important;
+}
+
+.footer-cover-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #fff !important;
+    opacity: 0 !important;
+    transition: var(--claude-transition) !important;
+}
+
+.footer-cover-wrap:hover .footer-cover-overlay {
+    opacity: 1 !important;
+}
+
+.footer-cover-wrap:hover .footer-cover {
+    transform: scale(1.08) !important;
+}
+
+.footer-song-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+}
+
+.footer-song-title-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.footer-song-name {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--claude-text-primary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.footer-quality-badge {
+    display: inline-block !important;
+    padding: 1px 6px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    background: var(--claude-sage-soft) !important;
+    color: #a7cf7b !important;
+    border: 1px solid rgba(120, 140, 93, 0.35) !important;
+    letter-spacing: 0.2px !important;
+    flex-shrink: 0 !important;
+}
+
+.footer-song-artist {
+    font-size: 12px !important;
+    color: var(--claude-text-secondary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-top: 2px !important;
+}
+
+/* 收藏红心按钮 */
+.footer-icon-btn {
+    background: transparent !important;
+    border: none !important;
+    padding: 6px !important;
+    border-radius: var(--claude-radius-pill) !important;
+    color: var(--claude-text-muted) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: var(--claude-transition) !important;
+}
+
+.footer-icon-btn:hover {
+    color: var(--claude-text-primary) !important;
+    background: var(--claude-surface-hover) !important;
+}
+
+.btn-like {
+    margin-left: 2px !important;
+}
+
+.btn-like .heart-icon {
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-like:hover .heart-icon {
+    transform: scale(1.15);
+}
+
+.btn-like.liked {
+    color: var(--claude-terracotta) !important;
+}
+
+.btn-like.liked .heart-icon {
+    fill: var(--claude-terracotta) !important;
+    stroke: var(--claude-terracotta) !important;
+    transform: scale(1.08);
+}
+
+/* --- 2. 中间核心播放与时间进度条 (网易云结构) --- */
+.footer-center {
+    flex: 1 1 520px !important;
+    max-width: 600px !important;
+    margin: 0 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+/* 控制按钮行 */
+.player-controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 18px !important;
+}
+
+.player-controls .player-btn {
+    position: static !important;
+    display: inline-block !important;
+    float: none !important;
+    margin: 0 !important;
+    transition: var(--claude-transition) !important;
+    opacity: 0.85 !important;
+}
+
+.player-controls .player-btn:hover {
+    opacity: 1 !important;
+    transform: scale(1.08) !important;
+}
+
+/* 核心播放/暂停大圆钮 */
+.player-controls .btn-play {
+    width: 38px !important;
+    height: 38px !important;
+    background-color: var(--claude-terracotta) !important;
+    border-radius: 50% !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    margin: 0 4px !important;
+    box-shadow: 0 4px 16px var(--claude-terracotta-glow) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.player-controls .btn-play:hover {
+    background-color: var(--claude-terracotta-hover) !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 20px var(--claude-terracotta-glow) !important;
+}
+
+.player-controls .btn-play:after {
+    content: '' !important;
+    display: block !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 14px !important;
+    height: 16px !important;
+    background-image: url("../images/player.png") !important;
+    background-position: 0 0 !important;
+}
+
+.player-controls .btn-play.btn-state-paused:after {
+    background-position: -30px 0 !important;
+}
+
+/* 进度条与时间显示行 */
+.player-progress-bar-wrap {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.time-display {
+    font-size: 11px !important;
+    color: var(--claude-text-secondary) !important;
+    font-family: Consolas, Menlo, Monaco, "Courier New", monospace !important;
+    min-width: 38px !important;
+    text-align: center !important;
+    user-select: none !important;
+}
+
+.total-time {
+    color: var(--claude-text-muted) !important;
+}
+
+.progress-box {
+    position: relative !important;
+    flex: 1 !important;
+    height: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+}
+
+/* 孟坤进度条样式增强：高质感双色轨与发光圆点 */
+.mkpgb-area {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.mkpgb-bar {
+    position: absolute !important;
+    width: 100% !important;
+    height: 4px !important;
+    border-radius: 4px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    transition: height 0.18s ease !important;
+    overflow: visible !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+}
+
+.progress-box:hover .mkpgb-bar {
+    height: 6px !important;
+}
+
+/* 缓冲进度条 */
+.mkpgb-buf {
+    position: absolute !important;
+    height: 100% !important;
+    width: 0%;
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-radius: 4px !important;
+    top: 0 !important;
+    left: 0 !important;
+    pointer-events: none !important;
+    transition: width 0.3s ease !important;
+}
+
+/* 已播放进度条 (Claude 陶土渐变色) */
+.mkpgb-cur {
+    position: absolute !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, #d97757 0%, #e59275 100%) !important;
+    border-radius: 4px !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 0 10px rgba(217, 119, 87, 0.5) !important;
+}
+
+/* 滑块小圆点 */
+.mkpgb-dot {
+    width: 12px !important;
+    height: 12px !important;
+    background: #ffffff !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--claude-terracotta) !important;
+    top: 50% !important;
+    margin-top: -6px !important;
+    margin-left: -6px !important;
+    transition: transform 0.15s ease !important;
+    opacity: 0 !important;
+}
+
+.progress-box:hover .mkpgb-dot {
+    opacity: 1 !important;
+    transform: scale(1.2) !important;
+}
+
+/* 悬浮预览时间气泡 Tooltip */
+.progress-tooltip {
+    position: absolute !important;
+    bottom: 24px !important;
+    transform: translateX(-50%) !important;
+    padding: 3px 8px !important;
+    background: rgba(28, 27, 24, 0.95) !important;
+    border: 1px solid var(--claude-border-hover) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-family: Consolas, Menlo, Monaco, monospace !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+    pointer-events: none !important;
+    opacity: 0;
+    transition: opacity 0.15s ease !important;
+    z-index: 10000 !important;
+    white-space: nowrap !important;
+}
+
+.progress-tooltip.show {
+    opacity: 1 !important;
+}
+
+/* --- 3. 右侧高级播放工具箱 (倍速 / 音源 / 音量 / 歌单) --- */
+.footer-right {
+    flex: 0 0 300px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+/* 倍速胶囊按钮 */
+.speed-control-box {
+    position: relative !important;
+}
+
+.speed-capsule-btn {
+    height: 28px !important;
+    padding: 0 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    color: var(--claude-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: var(--claude-transition) !important;
+}
+
+.speed-capsule-btn:hover {
+    color: var(--claude-text-primary) !important;
+    border-color: var(--claude-border-hover) !important;
+    background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.speed-capsule-btn.active-speed {
+    background: var(--claude-terracotta) !important;
+    border-color: var(--claude-terracotta) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px var(--claude-terracotta-glow) !important;
+}
+
+/* 倍速下拉弹层 (Claude 风格精致暗色卡片) */
+.speed-menu-dropdown {
+    position: absolute !important;
+    bottom: 38px !important;
+    right: 0 !important;
+    width: 110px !important;
+    background: rgba(24, 23, 20, 0.96) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    padding: 6px 0 !important;
+    display: none;
+    z-index: 10002 !important;
+}
+
+.speed-menu-dropdown.show {
+    display: block !important;
+    animation: speedFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes speedFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.speed-menu-title {
+    padding: 4px 12px 6px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: var(--claude-text-muted) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    margin-bottom: 4px !important;
+}
+
+.speed-item {
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    color: var(--claude-text-secondary) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    transition: var(--claude-transition) !important;
+}
+
+.speed-item:hover {
+    color: var(--claude-text-primary) !important;
+    background: var(--claude-surface-hover) !important;
+}
+
+.speed-item.active {
+    color: var(--claude-terracotta) !important;
+    font-weight: 600 !important;
+}
+
+.speed-item.active:after {
+    content: '✓' !important;
+    font-size: 12px !important;
+    color: var(--claude-terracotta) !important;
+}
+
+/* 当前音源胶囊 */
+.source-capsule-btn {
+    height: 28px !important;
+    padding: 0 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    color: var(--claude-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: var(--claude-transition) !important;
+}
+
+.source-capsule-btn:hover {
+    color: var(--claude-text-primary) !important;
+    border-color: var(--claude-border-hover) !important;
+    background: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* 音量控制组合 */
+.footer-vol-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.footer-vol-wrap .btn-quiet {
+    position: static !important;
+    display: inline-block !important;
+    float: none !important;
+    margin: 0 !important;
+    opacity: 0.8 !important;
+}
+
+.footer-vol-wrap .btn-quiet:hover {
+    opacity: 1 !important;
+}
+
+.volume-slider-box {
+    width: 75px !important;
+    height: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    position: relative !important;
+}
+
+.volume-slider-box .mkpgb-bar {
+    height: 4px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.volume-slider-box .mkpgb-cur {
+    background: var(--claude-text-secondary) !important;
+    box-shadow: none !important;
+}
+
+.volume-slider-box:hover .mkpgb-cur {
+    background: var(--claude-terracotta) !important;
+}
+
+/* 播放队列抽屉按钮 */
+.btn-playlist-toggle {
+    position: relative !important;
+}
+
+.playlist-count-badge {
+    position: absolute !important;
+    top: -2px !important;
+    right: -4px !important;
+    background: var(--claude-terracotta) !important;
+    color: #fff !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    padding: 0 4px !important;
+    line-height: 14px !important;
+    border-radius: var(--claude-radius-pill) !important;
+    text-align: center !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 浮动操作 Toast (快捷键响应提示) */
+.claude-toast {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) scale(0.9) !important;
+    background: rgba(20, 20, 19, 0.92) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid var(--claude-border) !important;
+    color: var(--claude-text-primary) !important;
+    padding: 10px 22px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 100000 !important;
+}
+
+.claude-toast.show {
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+}
+
+/* 移动端排版自适应 (< 768px) - 网易云紧凑双层底栏与高质感触控 */
+@media screen and (max-width: 768px) {
+    :root {
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-top: env(safe-area-inset-top, 0px);
+    }
+    .center {
+        top: calc(44px + var(--safe-top)) !important;
+        bottom: calc(74px + var(--safe-bottom)) !important;
+    }
+    .footer {
+        height: calc(74px + var(--safe-bottom)) !important;
+        padding: 0 10px var(--safe-bottom) !important;
+        box-sizing: border-box !important;
+    }
+    .footer-container {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 4px 2px 2px !important;
+        width: 100% !important;
+        height: 100% !important;
+        gap: 0 !important;
+    }
+
+    /* 移动端顶层：贯穿式网易云紧凑时间进度条 */
+    .footer-center {
+        order: -1 !important;
+        flex: 0 0 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .player-progress-bar-wrap {
+        display: flex !important;
+        width: 100% !important;
+        align-items: center !important;
+        gap: 6px !important;
+        padding: 1px 0 3px !important;
+    }
+    .time-display {
+        font-size: 10px !important;
+        min-width: 28px !important;
+        color: var(--claude-text-muted) !important;
+        letter-spacing: -0.2px !important;
+    }
+    .time-display.current-time {
+        color: var(--claude-text-secondary) !important;
+    }
+    .progress-box {
+        height: 16px !important;
+    }
+    .mkpgb-bar {
+        height: 3px !important;
+    }
+    .progress-box:active .mkpgb-bar {
+        height: 5px !important;
+    }
+    .mkpgb-dot {
+        opacity: 1 !important; /* 移动端始终保持小白点可见，便于手指触控 */
+        width: 10px !important;
+        height: 10px !important;
+        margin-top: -5px !important;
+        margin-left: -5px !important;
+    }
+
+    /* 移动端底层左侧：微缩歌曲卡片 + 红心 */
+    .footer-left {
+        flex: 1 1 auto !important;
+        max-width: 48% !important;
+        min-width: 0 !important;
+        gap: 7px !important;
+    }
+    .footer-cover-wrap {
+        width: 38px !important;
+        height: 38px !important;
+        flex-shrink: 0 !important;
+    }
+    .footer-song-meta {
+        min-width: 0 !important;
+        flex: 1 !important;
+    }
+    .footer-song-name {
+        font-size: 12.5px !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .footer-song-artist {
+        font-size: 10.5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .footer-quality-badge {
+        display: none !important; /* 节省移动端水平空间 */
+    }
+    .btn-like {
+        padding: 4px !important;
+        margin-left: 0 !important;
+    }
+    .btn-like svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    /* 移动端底层中间：主控制按钮 */
+    .player-controls {
+        position: static !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin: 0 !important;
+    }
+    .player-controls .btn-order,
+    .player-controls .btn-lyric-toggle {
+        display: none !important; /* 循环模式和纯歌词在更多/菜单中切换 */
+    }
+    .player-controls .btn-prev,
+    .player-controls .btn-next {
+        width: 22px !important;
+        height: 22px !important;
+        opacity: 0.9 !important;
+    }
+    .player-controls .btn-play {
+        width: 34px !important;
+        height: 34px !important;
+        margin: 0 !important;
+    }
+
+    /* 移动端底层右侧：倍速胶囊 + 播放队列 */
+    .footer-right {
+        flex: 0 0 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+    .footer-right .footer-vol-wrap,
+    .footer-right .source-capsule-btn {
+        display: none !important; /* 移动端物理音量键即可调节音量 */
+    }
+    .speed-capsule-btn {
+        height: 24px !important;
+        padding: 0 7px !important;
+        font-size: 11px !important;
+    }
+    .speed-menu-dropdown {
+        bottom: 34px !important;
+        right: 0 !important;
+        width: 100px !important;
+    }
+    .speed-item {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+    }
+    .btn-playlist-toggle {
+        padding: 4px !important;
+    }
+    .btn-playlist-toggle svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+}
+
