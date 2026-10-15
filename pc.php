@@ -69,7 +69,7 @@ body{
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span>博客</span>
         </a>
-        <a href="https://a.21212121.xyz" target="_blank" rel="noopener" class="header-sub-link" title="站群全景工作台">
+        <a href="https://nav.21212121.xyz" target="_blank" rel="noopener" class="header-sub-link" title="站群全景工作台">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
             <span>导航</span>
         </a>

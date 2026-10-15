@@ -202,7 +202,7 @@ header("Expires: 0");
             <span class="account-dot"></span>
         </div>
         <a href="https://21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="访问岁月静好主博客">博客</a>
-        <a href="https://a.21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="前往站群全景工作台">导航</a>
+        <a href="https://nav.21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="前往站群全景工作台">导航</a>
     </div>
 </header>
 
