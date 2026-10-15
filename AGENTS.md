@@ -4,11 +4,14 @@
 - **项目名称**：全网解析在线音乐播放器
 - **独立二级域名**：`https://music.21212121.xyz`
 - **技术栈**：HTML5 / CSS3 / JavaScript / Meting API
+- **静态资源 CDN 加速**：
+  - 核心第三方依赖库（jQuery、Layer 弹窗、mCustomScrollbar 自定义滚动条、background-blur 背景模糊引擎）全量迁移至又拍云 CDN：`https://tc1.21212121.xyz/asite/assets/vendor/music/`。
 - **生产服务器根目录**：`/www/wwwroot/music.21212121.xyz/`
 - **自动化部署**：通过 GitHub Actions 联动，代码提交至 `main` 分支后自动同步至生产环境。
 
 ## 2. 核心架构与功能说明
 基于 MKOnline 与全网音源解析的轻量级在线音乐播放器，支持歌词同步高亮、高斯模糊唱片背景、个性歌单及移动端自适应。
+PC 端顶栏（`pc.php`）与移动端顶栏（`m.php`）均统一集成优雅高质感品牌胶囊导航（`xb-brand-pill-container`），提供指向个人主博客（`https://21212121.xyz`）与站群全景导航（`https://a.21212121.xyz`）的无缝直达能力。
 
 ## 3. 规范与维护约定
 - **单一规则源**：遵循本 `AGENTS.md`，严禁新增冗余规则文件。
