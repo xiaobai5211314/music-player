@@ -196,9 +196,9 @@ header("Expires: 0");
         <span>小白随身听</span>
     </div>
     <div class="mnav-actions">
-        <div class="cloud-account-badge" id="cloud-account-badge" title="网易云云端同步">
+        <div class="cloud-account-badge" id="cloud-account-badge" title="账号密码登录与网易云同步">
             <img src="images/player_cover.png" class="account-avatar" alt="头像">
-            <span class="account-name">网易云</span>
+            <span class="account-name">登录/注册</span>
             <span class="account-dot"></span>
         </div>
         <a href="https://21212121.xyz" target="_blank" rel="noopener" class="mnav-pill" title="访问岁月静好主博客">博客</a>

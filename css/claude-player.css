@@ -434,6 +434,185 @@ body {
     border-color: #ef4444 !important;
 }
 
+/* 登录/注册 Tab 分段选择器 */
+.claude-auth-tabs {
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--claude-border) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    padding: 3px !important;
+    margin-bottom: 18px !important;
+}
+
+.auth-tab-item {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 6px 0 !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    color: var(--claude-text-muted) !important;
+    border-radius: var(--claude-radius-pill) !important;
+    cursor: pointer !important;
+    transition: var(--claude-transition) !important;
+    user-select: none !important;
+}
+
+.auth-tab-item:hover {
+    color: var(--claude-text-primary) !important;
+}
+
+.auth-tab-item.active {
+    background: var(--claude-terracotta) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px var(--claude-terracotta-glow) !important;
+}
+
+.auth-tab-pane {
+    display: none;
+}
+
+.auth-tab-pane.active {
+    display: block !important;
+    animation: authPaneFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes authPaneFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-form-group {
+    margin-bottom: 14px !important;
+}
+
+.label-hint {
+    font-size: 11px !important;
+    color: var(--claude-text-muted) !important;
+    font-weight: normal !important;
+    margin-left: 4px !important;
+}
+
+.claude-modal-block-btn {
+    width: 100% !important;
+    height: 38px !important;
+    border-radius: var(--claude-radius-sm) !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    border: none !important;
+    margin-top: 6px !important;
+    transition: var(--claude-transition) !important;
+}
+
+.claude-modal-block-btn.primary {
+    background: var(--claude-terracotta) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px var(--claude-terracotta-glow) !important;
+}
+
+.claude-modal-block-btn.primary:hover {
+    background: var(--claude-terracotta-hover) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 网易云 UID 绑定管理板块 */
+.netease-binding-panel {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: var(--claude-radius-sm) !important;
+    padding: 12px !important;
+    margin-bottom: 16px !important;
+}
+
+.binding-info-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    font-size: 12.5px !important;
+    margin-bottom: 10px !important;
+}
+
+.binding-label {
+    color: var(--claude-text-muted) !important;
+}
+
+.binding-val {
+    color: var(--claude-text-primary) !important;
+    font-weight: 500 !important;
+}
+
+.uid-tag {
+    color: var(--claude-terracotta) !important;
+    font-size: 11.5px !important;
+    font-family: monospace !important;
+}
+
+.binding-action-row {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+.claude-pill-btn {
+    flex: 1 !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: var(--claude-radius-pill) !important;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    border: 1px solid transparent !important;
+    transition: var(--claude-transition) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.claude-pill-btn.primary {
+    background: rgba(217, 119, 87, 0.15) !important;
+    border-color: rgba(217, 119, 87, 0.4) !important;
+    color: #ff9b7a !important;
+}
+
+.claude-pill-btn.primary:hover {
+    background: var(--claude-terracotta) !important;
+    color: #fff !important;
+}
+
+.claude-pill-btn.secondary {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: var(--claude-border) !important;
+    color: var(--claude-text-secondary) !important;
+}
+
+.claude-pill-btn.secondary:hover {
+    color: var(--claude-text-primary) !important;
+    background: var(--claude-surface-hover) !important;
+}
+
+.claude-pill-btn.danger {
+    background: transparent !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+}
+
+.claude-pill-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: #ef4444 !important;
+}
+
+.binding-empty-notice {
+    font-size: 12px !important;
+    color: var(--claude-text-muted) !important;
+    margin-bottom: 8px !important;
+}
+
+.binding-input-group {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+
 .btn-box .active:after {
     display: none !important;
 }

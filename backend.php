@@ -669,6 +669,19 @@ class MusicStorage
                         avatar TEXT,
                         updated_at INTEGER
                     );
+                    CREATE TABLE IF NOT EXISTS cloud_accounts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        token TEXT,
+                        netease_uid TEXT DEFAULT '',
+                        netease_name TEXT DEFAULT '',
+                        netease_avatar TEXT DEFAULT '',
+                        created_at INTEGER,
+                        last_login INTEGER
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_acc_username ON cloud_accounts(username);
+                    CREATE INDEX IF NOT EXISTS idx_acc_token ON cloud_accounts(token);
                     CREATE TABLE IF NOT EXISTS cloud_history (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         uid TEXT,
@@ -745,6 +758,298 @@ class MusicStorage
             return $curr;
         }
     }
+
+    /* ---------------------------------------------------------
+     * 账户认证系统 (用户名 + 密码 + 绑定网易云 UID)
+     * --------------------------------------------------------- */
+    public static function resolveKey($token = '', $uid = '')
+    {
+        $token = trim((string)$token);
+        if ($token !== '') {
+            $acc = self::getAccountByToken($token);
+            if ($acc && !empty($acc['username'])) {
+                return 'usr_' . $acc['username'];
+            }
+        }
+        $uid = trim((string)$uid);
+        return $uid !== '' ? $uid : '';
+    }
+
+    public static function fetchNeteaseProfile($uid)
+    {
+        $res = ['nickname' => '网易云用户 ' . $uid, 'avatar' => 'images/player_cover.png'];
+        $uid = trim((string)$uid);
+        if ($uid === '') return $res;
+        $url = 'https://music.163.com/api/user/playlist/?offset=0&limit=1&uid=' . rawurlencode($uid);
+        list($c, $b) = http_request($url, 'GET', ['Referer' => 'https://music.163.com/'], null, 8);
+        if ($c === 200 && !empty($b)) {
+            $j = json_decode($b, true);
+            if (!empty($j['playlist'][0]['creator'])) {
+                $creator = $j['playlist'][0]['creator'];
+                if (!empty($creator['nickname'])) $res['nickname'] = $creator['nickname'];
+                if (!empty($creator['avatarUrl'])) $res['avatar'] = $creator['avatarUrl'];
+            }
+        }
+        return $res;
+    }
+
+    public static function getAccountByToken($token)
+    {
+        $token = trim((string)$token);
+        if ($token === '') return null;
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("SELECT id, username, netease_uid, netease_name, netease_avatar, created_at, last_login FROM cloud_accounts WHERE token = :t LIMIT 1");
+            $stmt->execute([':t' => $token]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } else {
+            $d = self::getJsonData();
+            if (isset($d['accounts'])) {
+                foreach ($d['accounts'] as $acc) {
+                    if (isset($acc['token']) && $acc['token'] === $token) {
+                        return [
+                            'id' => $acc['id'],
+                            'username' => $acc['username'],
+                            'netease_uid' => isset($acc['netease_uid']) ? $acc['netease_uid'] : '',
+                            'netease_name' => isset($acc['netease_name']) ? $acc['netease_name'] : '',
+                            'netease_avatar' => isset($acc['netease_avatar']) ? $acc['netease_avatar'] : '',
+                            'created_at' => $acc['created_at'],
+                            'last_login' => isset($acc['last_login']) ? $acc['last_login'] : 0
+                        ];
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    public static function register($username, $password, $neteaseUid = '')
+    {
+        $username = trim((string)$username);
+        $password = (string)$password;
+        $neteaseUid = trim((string)$neteaseUid);
+
+        if (mb_strlen($username, 'UTF-8') < 2 || mb_strlen($username, 'UTF-8') > 30) {
+            return ['code' => 400, 'msg' => '用户名长度应为 2~30 位字符'];
+        }
+        if (strlen($password) < 4) {
+            return ['code' => 400, 'msg' => '密码长度至少需要 4 位'];
+        }
+
+        $now = time();
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $token = bin2hex(random_bytes(16));
+
+        $nName = '';
+        $nAvatar = '';
+        if ($neteaseUid !== '') {
+            $prof = self::fetchNeteaseProfile($neteaseUid);
+            $nName = $prof['nickname'];
+            $nAvatar = $prof['avatar'];
+        }
+
+        if (self::$useSqlite && self::$pdo) {
+            $chk = self::$pdo->prepare("SELECT id FROM cloud_accounts WHERE username = :u LIMIT 1");
+            $chk->execute([':u' => $username]);
+            if ($chk->fetch()) {
+                return ['code' => 409, 'msg' => '用户名已被注册，请直接登录或换一个用户名'];
+            }
+
+            $stmt = self::$pdo->prepare("INSERT INTO cloud_accounts (username, password_hash, token, netease_uid, netease_name, netease_avatar, created_at, last_login) VALUES (:u, :p, :t, :nuid, :nname, :navatar, :c, :l)");
+            $stmt->execute([
+                ':u' => $username,
+                ':p' => $hash,
+                ':t' => $token,
+                ':nuid' => $neteaseUid,
+                ':nname' => $nName,
+                ':navatar' => $nAvatar,
+                ':c' => $now,
+                ':l' => $now
+            ]);
+            $accId = self::$pdo->lastInsertId();
+            return [
+                'code' => 200,
+                'msg' => '注册成功',
+                'token' => $token,
+                'user' => [
+                    'id' => $accId,
+                    'username' => $username,
+                    'netease_uid' => $neteaseUid,
+                    'netease_name' => $nName,
+                    'netease_avatar' => $nAvatar
+                ]
+            ];
+        } else {
+            $d = self::getJsonData();
+            if (!isset($d['accounts'])) $d['accounts'] = [];
+            foreach ($d['accounts'] as $acc) {
+                if ($acc['username'] === $username) {
+                    return ['code' => 409, 'msg' => '用户名已被注册，请直接登录'];
+                }
+            }
+            $accId = count($d['accounts']) + 1;
+            $newAcc = [
+                'id' => $accId,
+                'username' => $username,
+                'password_hash' => $hash,
+                'token' => $token,
+                'netease_uid' => $neteaseUid,
+                'netease_name' => $nName,
+                'netease_avatar' => $nAvatar,
+                'created_at' => $now,
+                'last_login' => $now
+            ];
+            $d['accounts'][] = $newAcc;
+            self::saveJsonData($d);
+            return [
+                'code' => 200,
+                'msg' => '注册成功',
+                'token' => $token,
+                'user' => [
+                    'id' => $accId,
+                    'username' => $username,
+                    'netease_uid' => $neteaseUid,
+                    'netease_name' => $nName,
+                    'netease_avatar' => $nAvatar
+                ]
+            ];
+        }
+    }
+
+    public static function login($username, $password)
+    {
+        $username = trim((string)$username);
+        $password = (string)$password;
+
+        if ($username === '' || $password === '') {
+            return ['code' => 400, 'msg' => '请输入用户名和密码'];
+        }
+        $now = time();
+        $token = bin2hex(random_bytes(16));
+
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("SELECT * FROM cloud_accounts WHERE username = :u LIMIT 1");
+            $stmt->execute([':u' => $username]);
+            $acc = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$acc || !password_verify($password, $acc['password_hash'])) {
+                return ['code' => 401, 'msg' => '用户名或密码错误'];
+            }
+            $upd = self::$pdo->prepare("UPDATE cloud_accounts SET token = :t, last_login = :l WHERE id = :id");
+            $upd->execute([':t' => $token, ':l' => $now, ':id' => $acc['id']]);
+
+            return [
+                'code' => 200,
+                'msg' => '登录成功',
+                'token' => $token,
+                'user' => [
+                    'id' => $acc['id'],
+                    'username' => $acc['username'],
+                    'netease_uid' => $acc['netease_uid'],
+                    'netease_name' => $acc['netease_name'],
+                    'netease_avatar' => $acc['netease_avatar']
+                ]
+            ];
+        } else {
+            $d = self::getJsonData();
+            if (isset($d['accounts'])) {
+                foreach ($d['accounts'] as &$acc) {
+                    if ($acc['username'] === $username) {
+                        if (!password_verify($password, $acc['password_hash'])) {
+                            return ['code' => 401, 'msg' => '用户名或密码错误'];
+                        }
+                        $acc['token'] = $token;
+                        $acc['last_login'] = $now;
+                        self::saveJsonData($d);
+                        return [
+                            'code' => 200,
+                            'msg' => '登录成功',
+                            'token' => $token,
+                            'user' => [
+                                'id' => $acc['id'],
+                                'username' => $acc['username'],
+                                'netease_uid' => isset($acc['netease_uid']) ? $acc['netease_uid'] : '',
+                                'netease_name' => isset($acc['netease_name']) ? $acc['netease_name'] : '',
+                                'netease_avatar' => isset($acc['netease_avatar']) ? $acc['netease_avatar'] : ''
+                            ]
+                        ];
+                    }
+                }
+            }
+            return ['code' => 401, 'msg' => '用户名或密码错误'];
+        }
+    }
+
+    public static function bindNetease($token, $neteaseUid)
+    {
+        $neteaseUid = trim((string)$neteaseUid);
+        if ($neteaseUid === '') return ['code' => 400, 'msg' => 'UID 不能为空'];
+
+        $prof = self::fetchNeteaseProfile($neteaseUid);
+        $nName = $prof['nickname'];
+        $nAvatar = $prof['avatar'];
+
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("UPDATE cloud_accounts SET netease_uid = :nuid, netease_name = :nname, netease_avatar = :navatar WHERE token = :t");
+            $stmt->execute([':nuid' => $neteaseUid, ':nname' => $nName, ':navatar' => $nAvatar, ':t' => $token]);
+            if ($stmt->rowCount() > 0) {
+                return [
+                    'code' => 200,
+                    'msg' => '网易云绑定成功',
+                    'user' => [
+                        'netease_uid' => $neteaseUid,
+                        'netease_name' => $nName,
+                        'netease_avatar' => $nAvatar
+                    ]
+                ];
+            }
+            return ['code' => 401, 'msg' => '登录已过期，请重新登录'];
+        } else {
+            $d = self::getJsonData();
+            if (isset($d['accounts'])) {
+                foreach ($d['accounts'] as &$acc) {
+                    if (isset($acc['token']) && $acc['token'] === $token) {
+                        $acc['netease_uid'] = $neteaseUid;
+                        $acc['netease_name'] = $nName;
+                        $acc['netease_avatar'] = $nAvatar;
+                        self::saveJsonData($d);
+                        return [
+                            'code' => 200,
+                            'msg' => '网易云绑定成功',
+                            'user' => [
+                                'netease_uid' => $neteaseUid,
+                                'netease_name' => $nName,
+                                'netease_avatar' => $nAvatar
+                            ]
+                        ];
+                    }
+                }
+            }
+            return ['code' => 401, 'msg' => '登录已过期，请重新登录'];
+        }
+    }
+
+    public static function unbindNetease($token)
+    {
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("UPDATE cloud_accounts SET netease_uid = '', netease_name = '', netease_avatar = '' WHERE token = :t");
+            $stmt->execute([':t' => $token]);
+            return ['code' => 200, 'msg' => '已解除网易云账号绑定'];
+        } else {
+            $d = self::getJsonData();
+            if (isset($d['accounts'])) {
+                foreach ($d['accounts'] as &$acc) {
+                    if (isset($acc['token']) && $acc['token'] === $token) {
+                        $acc['netease_uid'] = '';
+                        $acc['netease_name'] = '';
+                        $acc['netease_avatar'] = '';
+                        self::saveJsonData($d);
+                        return ['code' => 200, 'msg' => '已解除网易云账号绑定'];
+                    }
+                }
+            }
+            return ['code' => 200, 'msg' => '已解除网易云账号绑定'];
+        }
+    }
+
 
     public static function recordHistory($uid, $song)
     {
@@ -1023,7 +1328,52 @@ switch ($type) {
         }
         out_json(['lyric' => $l]);
 
-    // 云端数据持久化支持 (SQLite / JSON 双引擎)
+    // -------------------------------------------------------------
+    // 用户名 + 密码 账号与网易云 UID 绑定体系 (SQLite 驱动)
+    // -------------------------------------------------------------
+    case 'user_register':
+        $u = isset($_REQUEST['username']) ? trim($_REQUEST['username']) : '';
+        $p = isset($_REQUEST['password']) ? trim($_REQUEST['password']) : '';
+        $nuid = isset($_REQUEST['netease_uid']) ? trim($_REQUEST['netease_uid']) : '';
+        $res = MusicStorage::register($u, $p, $nuid);
+        out_json($res);
+
+    case 'user_login':
+        $u = isset($_REQUEST['username']) ? trim($_REQUEST['username']) : '';
+        $p = isset($_REQUEST['password']) ? trim($_REQUEST['password']) : '';
+        $res = MusicStorage::login($u, $p);
+        out_json($res);
+
+    case 'user_profile':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
+        $acc = MusicStorage::getAccountByToken($tok);
+        if (!$acc) {
+            out_json(['code' => 401, 'msg' => '未登录或登录已过期']);
+        }
+        $key = 'usr_' . $acc['username'];
+        $favCount = count(MusicStorage::getFavorites($key));
+        $histCount = count(MusicStorage::getHistory($key, 300));
+        out_json([
+            'code' => 200,
+            'user' => $acc,
+            'stat' => [
+                'favorites' => $favCount,
+                'history' => $histCount
+            ]
+        ]);
+
+    case 'user_bind_netease':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
+        $nuid = isset($_REQUEST['netease_uid']) ? trim($_REQUEST['netease_uid']) : '';
+        $res = MusicStorage::bindNetease($tok, $nuid);
+        out_json($res);
+
+    case 'user_unbind_netease':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
+        $res = MusicStorage::unbindNetease($tok);
+        out_json($res);
+
+    // 云端数据持久化支持 (支持 Token 或 UID 双模识别)
     case 'sync_account':
         $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
         $nick = isset($_REQUEST['nickname']) ? trim($_REQUEST['nickname']) : '';
@@ -1042,30 +1392,39 @@ switch ($type) {
         ]);
 
     case 'record_history':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
         $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $key = MusicStorage::resolveKey($tok, $uid);
         $songRaw = isset($_REQUEST['song']) ? $_REQUEST['song'] : '';
         $song = is_array($songRaw) ? $songRaw : json_decode($songRaw, true);
-        if ($uid === '' || empty($song)) out_json(['code' => 400]);
-        $ok = MusicStorage::recordHistory($uid, $song);
+        if ($key === '' || empty($song)) out_json(['code' => 400]);
+        $ok = MusicStorage::recordHistory($key, $song);
         out_json(['code' => $ok ? 200 : 500]);
 
     case 'get_history':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
         $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
-        $list = MusicStorage::getHistory($uid, 200);
+        $key = MusicStorage::resolveKey($tok, $uid);
+        $list = MusicStorage::getHistory($key, 200);
         out_json(['code' => 200, 'list' => $list]);
 
     case 'toggle_favorite':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
         $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $key = MusicStorage::resolveKey($tok, $uid);
         $songRaw = isset($_REQUEST['song']) ? $_REQUEST['song'] : '';
         $song = is_array($songRaw) ? $songRaw : json_decode($songRaw, true);
-        if ($uid === '' || empty($song)) out_json(['code' => 400]);
-        $res = MusicStorage::toggleFavorite($uid, $song);
+        if ($key === '' || empty($song)) out_json(['code' => 400]);
+        $res = MusicStorage::toggleFavorite($key, $song);
         out_json(['code' => 200, 'liked' => $res['liked']]);
 
     case 'get_favorites':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
         $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
-        $list = MusicStorage::getFavorites($uid);
+        $key = MusicStorage::resolveKey($tok, $uid);
+        $list = MusicStorage::getFavorites($key);
         out_json(['code' => 200, 'list' => $list]);
+
 
     default:
         // 未匹配时返回就绪状态

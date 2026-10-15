@@ -85,11 +85,11 @@ body{
         </div>
     </div>
 
-    <!-- 右侧网易云云端持久化账户徽章 (SQLite) -->
+    <!-- 右侧用户账户与云端持久化徽章 (SQLite) -->
     <div class="header-right-group">
-        <div class="cloud-account-badge" id="cloud-account-badge" title="网易云音乐云端同步 (SQLite)">
+        <div class="cloud-account-badge" id="cloud-account-badge" title="账号密码登录与网易云云端同步 (SQLite)">
             <img src="images/player_cover.png" class="account-avatar" id="account-avatar" alt="头像">
-            <span class="account-name" id="account-name">绑定网易云</span>
+            <span class="account-name" id="account-name">登录 / 注册</span>
             <span class="account-dot" id="account-dot"></span>
         </div>
     </div>
