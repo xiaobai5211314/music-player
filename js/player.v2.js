@@ -704,12 +704,17 @@ $(function(){
         $(".btn[data-action='playing']").click();
     });
     
-    // 歌词视图切换
+    // 歌词视图双向切换 (支持 PC 端与移动端自由切入/切出)
     $(document).on('click', '#btn-lyric-toggle, .footer-cover-wrap', function(){
-        if ($("#player").is(":visible") && rem.isMobile) {
+        var isPlayerActive = $("#player").is(":visible") && ($("#main-list").is(":hidden") || rem.isMobile);
+        if (isPlayerActive) {
             $(".btn[data-action='playing']").click();
+            $("#btn-lyric-toggle").removeClass("active");
+            $("body").removeClass("is-pure-player");
         } else {
             $(".btn[data-action='player']").click();
+            $("#btn-lyric-toggle").addClass("active");
+            $("body").addClass("is-pure-player");
         }
     });
     

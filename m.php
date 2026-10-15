@@ -45,7 +45,7 @@ header("Expires: 0");
     <link rel="stylesheet" href="plugns/layer/skin/default/layer.css?v=3.0.2302" id="layuicss-skinlayercss">
 
     <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
-    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.2.0">
+    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.2.2">
     <style>
     /* 移动端顶栏与沉浸式毛玻璃系统 */
     :root {
@@ -341,10 +341,10 @@ header("Expires: 0");
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.v2.js"></script>
+<script src="js/functions.v2.js?v=2.2.2"></script>
 
 <!-- 播放器主体功能模块 (包含倍速持久化/时间进度条/红心收藏/快捷键) -->
-<script src="js/player.v2.js"></script>
+<script src="js/player.v2.js?v=2.2.2"></script>
 
 <!-- 滚动条美化插件 -->
 <script src="js/jquery.mCustomScrollbar.concat.min.js"></script>

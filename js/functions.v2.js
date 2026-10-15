@@ -708,6 +708,8 @@ function dataBox(choose) {
             }
             $("#main-list").fadeIn();
             $("#sheet").fadeOut();
+            $("#btn-lyric-toggle").removeClass("active");
+            $("body").removeClass("is-pure-player");
             if(rem.dislist == 1 || rem.dislist == rem.playlist) {  // 正在播放
                 $(".btn[data-action='playing']").addClass('active');
             } else if(rem.dislist == 0) {  // 搜索
@@ -723,6 +725,8 @@ function dataBox(choose) {
             }
             $("#sheet").fadeIn();
             $("#main-list").fadeOut();
+            $("#btn-lyric-toggle").removeClass("active");
+            $("body").removeClass("is-pure-player");
             $(".btn[data-action='sheet']").addClass('active');
         break;
         
@@ -730,6 +734,8 @@ function dataBox(choose) {
             $("#player").fadeIn();
             $("#sheet").fadeOut();
             $("#main-list").fadeOut();
+            $("#btn-lyric-toggle").addClass("active");
+            $("body").addClass("is-pure-player");
             $(".btn[data-action='player']").addClass('active');
         break;
     }
