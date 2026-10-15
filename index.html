@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小白在线音乐 · 加载中</title>
+<script>
+(function() {
+    var clientKeywords = ['nokia', 'sony', 'ericsson', 'mot', 'samsung', 'htc', 'sgh', 'lg', 'sharp', 'oppo', 'sie-', 'philips', 'panasonic', 'alcatel', 'lenovo', 'iphone', 'ipod', 'blackberry', 'meizu', 'android', 'netfront', 'symbian', 'ucweb', 'windowsce', 'palm', 'operamini', 'operamobi', 'openwave', 'nexusone', 'cldc', 'midp', 'wap', 'mobile'];
+    var ua = (navigator.userAgent || '').toLowerCase();
+    var isMobile = false;
+    for (var i = 0; i < clientKeywords.length; i++) {
+        if (ua.indexOf(clientKeywords[i]) !== -1) {
+            isMobile = true;
+            break;
+        }
+    }
+    window.location.replace(isMobile ? 'm.php' : 'pc.php');
+})();
+</script>
+</head>
+<body style="background:#000;color:#888;font-family:sans-serif;text-align:center;padding-top:30vh;">
+    <p>正在启动音乐播放器...</p>
+    <p><a href="pc.php" style="color:#38bdf8;">桌面端入口</a> | <a href="m.php" style="color:#ec4899;">移动端入口</a> | <a href="../" style="color:#aaa;">返回全景主站</a></p>
+</body>
+</html>

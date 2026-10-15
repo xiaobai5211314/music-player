@@ -1,0 +1,154 @@
+{
+  "version": "2.1.0",
+  "updated": "2026-10-15",
+  "defaultSource": "全豆要[聚合音源].js",
+  "sources": [
+    {
+      "id": "全豆要[聚合音源]",
+      "file": "全豆要[聚合音源].js",
+      "name": "全豆要[聚合音源]",
+      "version": "v4.1",
+      "description": "迭代4.1版本，聚合星海/溯音/念心/长青/歌一刀专属汽水音乐，多链路自动回退",
+      "author": "全豆要 (Gemini优化/去混淆)",
+      "verified": true,
+      "default": true,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "kg",
+        "mg"
+      ]
+    },
+    {
+      "id": "墨澜聚合音源",
+      "file": "墨澜聚合音源.js",
+      "name": "墨澜聚合音源",
+      "version": "2.3.0",
+      "description": "全平台支持flac，wy，qq，kw，kg支持母带",
+      "author": "白姬9527(2449067834)",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "kg",
+        "mg"
+      ]
+    },
+    {
+      "id": "念心音源",
+      "file": "念心音源.js",
+      "name": "念心音源",
+      "version": "1.0.2",
+      "description": "多平台可用音源，关注微信公众号: 念心小站",
+      "author": "念心小站",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "kg",
+        "mg"
+      ]
+    },
+    {
+      "id": "星澜聚合音源 (StellarWave)",
+      "file": "星澜聚合音源 (StellarWave).js",
+      "name": "星澜聚合音源 (StellarWave)",
+      "version": "v3.1.2",
+      "description": "QQ后端数: 23 | 网易: 18 | 酷我: 17 | 酷狗: 17 | 咪咕: 10",
+      "author": "星澜团队",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "kg",
+        "mg"
+      ]
+    },
+    {
+      "id": "溯音音源",
+      "file": "溯音音源.js",
+      "name": "溯音音源",
+      "version": "v1",
+      "description": "集成QQ、网易、酷我、咪咕音乐平台",
+      "author": "竹佀",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "mg"
+      ]
+    },
+    {
+      "id": "统一音乐源",
+      "file": "统一音乐源.js",
+      "name": "统一音乐源",
+      "version": "1.0.0",
+      "description": "支持网易云等平台的极简纯净音源",
+      "author": "统一音乐",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "kw"
+      ]
+    },
+    {
+      "id": "西瓜聚合源",
+      "file": "西瓜聚合源.js",
+      "name": "西瓜聚合源",
+      "version": "v1.40",
+      "description": "聚合星海/溯音/CHKSZ/长青/念心/Huibq/HYW/fish/汽水VIP 共10+后端",
+      "author": "西瓜",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "kg",
+        "mg"
+      ]
+    },
+    {
+      "id": "非常刀",
+      "file": "非常刀.js",
+      "name": "非常刀",
+      "version": "v4",
+      "description": "网易/QQ/酷我/酷狗/咪咕/汽水 多源聚合",
+      "author": "歌一刀",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "wy",
+        "tx",
+        "kw",
+        "kg",
+        "mg"
+      ]
+    },
+    {
+      "id": "👖裤佬SVIP音源",
+      "file": "👖裤佬SVIP音源.js",
+      "name": "👖裤佬SVIP音源",
+      "version": "1.0.0",
+      "description": "裤佬SVIP专属高速直链解析",
+      "author": "裤佬",
+      "verified": true,
+      "default": false,
+      "platforms": [
+        "kw",
+        "wy",
+        "tx"
+      ]
+    }
+  ]
+}
