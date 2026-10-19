@@ -16,6 +16,7 @@
         apiEndpoint: 'api.php',
         tokenKey: 'mk_cloud_vault_token',
         userKey: 'mk_cloud_vault_account',
+        searchKey: 'mk_recent_searches',
         token: '',
         user: {
             id: 0,
@@ -26,7 +27,8 @@
         },
         stats: {
             favorites: 0,
-            history: 0
+            history: 0,
+            searches: 0
         },
 
         // 初始化
@@ -121,6 +123,7 @@
                         if (res.stat) {
                             self.stats.favorites = res.stat.favorites || 0;
                             self.stats.history = res.stat.history || 0;
+                            self.stats.searches = res.stat.searches || 0;
                         }
                         self.renderBadge();
                         // 如果绑定了网易云并且尚未加载歌单，自动触发歌单拉取
@@ -223,6 +226,171 @@
                     if (res && res.code === 200 && typeof callback === 'function') {
                         callback(res.liked);
                     }
+                }
+            });
+        },
+
+        // 获取本地搜索历史 (纯客户端持久化兜底)
+        getLocalSearches: function () {
+            try {
+                var raw = localStorage.getItem(this.searchKey);
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return [];
+        },
+
+        // 记录搜索关键词（本地 + 云端漫游）
+        recordSearch: function (keyword, source) {
+            var self = this;
+            keyword = $.trim(keyword);
+            if (!keyword) return;
+            source = source || 'all';
+            var now = Math.floor(Date.now() / 1000);
+
+            // 1. 优先写入本地 localStorage
+            var list = self.getLocalSearches();
+            var filtered = [];
+            for (var i = 0; i < list.length; i++) {
+                if (list[i] && list[i].keyword !== keyword) {
+                    filtered.push(list[i]);
+                }
+            }
+            filtered.unshift({
+                keyword: keyword,
+                source: source,
+                searched_at: now
+            });
+            var updated = filtered.slice(0, 30);
+            try {
+                localStorage.setItem(self.searchKey, JSON.stringify(updated));
+            } catch (e) {}
+            self.stats.searches = updated.length;
+
+            // 2. 若已登录，同步记录至当前账号云端
+            var payload = {
+                types: 'record_search',
+                keyword: keyword,
+                source: source
+            };
+            if (self.token) {
+                payload.token = self.token;
+            } else if (self.user.netease_uid) {
+                payload.uid = self.user.netease_uid;
+            } else {
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: self.apiEndpoint,
+                data: payload,
+                dataType: 'json'
+            });
+        },
+
+        // 获取搜索历史（合并云端当前账号与本地记录）
+        getRecentSearches: function (callback) {
+            var self = this;
+            var localList = self.getLocalSearches();
+
+            // 若未登录，直接返回本地搜索记录
+            if (!self.token && !self.user.netease_uid) {
+                if (typeof callback === 'function') callback(localList, false);
+                return;
+            }
+
+            var payload = {
+                types: 'get_searches',
+                limit: 30
+            };
+            if (self.token) {
+                payload.token = self.token;
+            } else if (self.user.netease_uid) {
+                payload.uid = self.user.netease_uid;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: self.apiEndpoint,
+                data: payload,
+                dataType: 'json',
+                success: function (res) {
+                    if (res && res.code === 200 && Array.isArray(res.list)) {
+                        var map = {};
+                        var merged = [];
+                        res.list.forEach(function (item) {
+                            if (item && item.keyword && !map[item.keyword]) {
+                                map[item.keyword] = true;
+                                merged.push(item);
+                            }
+                        });
+                        localList.forEach(function (item) {
+                            if (item && item.keyword && !map[item.keyword]) {
+                                map[item.keyword] = true;
+                                merged.push(item);
+                                // 异步推入云端补全
+                                self.recordSearch(item.keyword, item.source);
+                            }
+                        });
+                        try {
+                            localStorage.setItem(self.searchKey, JSON.stringify(merged.slice(0, 30)));
+                        } catch (e) {}
+                        self.stats.searches = merged.length;
+                        if (typeof callback === 'function') callback(merged, true);
+                    } else {
+                        if (typeof callback === 'function') callback(localList, false);
+                    }
+                },
+                error: function () {
+                    if (typeof callback === 'function') callback(localList, false);
+                }
+            });
+        },
+
+        // 删除搜索历史记录（单条或清空全部）
+        deleteSearch: function (keyword, callback) {
+            var self = this;
+            keyword = keyword ? $.trim(keyword) : '';
+
+            // 1. 本地删除
+            var list = self.getLocalSearches();
+            var updated = [];
+            if (keyword !== '') {
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i] && list[i].keyword !== keyword) {
+                        updated.push(list[i]);
+                    }
+                }
+            }
+            try {
+                localStorage.setItem(self.searchKey, JSON.stringify(updated));
+            } catch (e) {}
+            self.stats.searches = updated.length;
+
+            // 2. 云端删除
+            var payload = {
+                types: 'delete_search',
+                keyword: keyword
+            };
+            if (self.token) {
+                payload.token = self.token;
+            } else if (self.user.netease_uid) {
+                payload.uid = self.user.netease_uid;
+            } else {
+                if (typeof callback === 'function') callback();
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: self.apiEndpoint,
+                data: payload,
+                dataType: 'json',
+                complete: function () {
+                    if (typeof callback === 'function') callback();
                 }
             });
         },
@@ -439,6 +607,10 @@
                 '  <div class="user-stat-card">' +
                 '    <div class="stat-num">' + (typeof musicList !== 'undefined' ? Math.max(0, musicList.length - 3) : 0) + '</div>' +
                 '    <div class="stat-label">同步歌单</div>' +
+                '  </div>' +
+                '  <div class="user-stat-card">' +
+                '    <div class="stat-num">' + (self.stats.searches || 0) + '</div>' +
+                '    <div class="stat-label">搜索漫游</div>' +
                 '  </div>' +
                 '</div>' +
 

@@ -356,7 +356,7 @@ body {
 
 .user-stats-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr) !important;
     gap: 8px !important;
     margin-bottom: 16px !important;
 }
@@ -1873,5 +1873,127 @@ body {
     border-color: var(--claude-terracotta, #c86545) !important;
     box-shadow: 0 3px 12px rgba(200, 101, 69, 0.42) !important;
 }
+
+/* ==============================================================
+ * 最近搜索记录模块：Anthropic Claude 陶土质感历史记录标签与云端漫游徽章
+ * ============================================================== */
+.search-history-section {
+    margin-top: 16px !important;
+    padding-top: 14px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-sizing: border-box !important;
+}
+
+.search-history-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+}
+
+.search-history-title-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.search-history-title {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    letter-spacing: 0.3px !important;
+}
+
+.search-history-badge {
+    font-size: 11px !important;
+    color: rgba(200, 101, 69, 0.85) !important;
+    background: rgba(200, 101, 69, 0.12) !important;
+    border: 1px solid rgba(200, 101, 69, 0.22) !important;
+    border-radius: 10px !important;
+    padding: 1px 7px !important;
+    line-height: 1.4 !important;
+}
+
+.search-history-clear-btn {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 11.5px !important;
+    cursor: pointer !important;
+    padding: 2px 6px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.search-history-clear-btn:hover {
+    color: var(--claude-terracotta, #c86545) !important;
+    background: rgba(200, 101, 69, 0.1) !important;
+}
+
+.search-history-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 7px !important;
+    max-height: 110px !important;
+    overflow-y: auto !important;
+    padding-right: 2px !important;
+}
+
+.search-history-tags::-webkit-scrollbar {
+    width: 4px !important;
+}
+
+.search-history-tags::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 4px !important;
+}
+
+.search-history-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 10px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-radius: 14px !important;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.search-history-pill:hover {
+    background: rgba(200, 101, 69, 0.14) !important;
+    border-color: rgba(200, 101, 69, 0.35) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+}
+
+.search-history-pill .pill-kw {
+    max-width: 130px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.search-history-pill .pill-del {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 50% !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    transition: all 0.15s ease !important;
+}
+
+.search-history-pill .pill-del:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ff6b6b !important;
+}
+
 
 

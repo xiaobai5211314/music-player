@@ -407,6 +407,16 @@ function searchBox() {
     '           <label class="source-pill-btn' + (curSource === 'kuwo' ? ' active' : '') + '"><input type="radio" name="source" value="kuwo"' + (curSource === 'kuwo' ? ' checked' : '') + '><span>酷我音乐</span></label>' + 
     '       </div>' + 
     '   </div>' + 
+    '   <div class="search-history-section" id="search-history-container" style="display:none;">' + 
+    '       <div class="search-history-header">' + 
+    '           <div class="search-history-title-wrap">' + 
+    '               <span class="search-history-title">🕒 最近搜索</span>' + 
+    '               <span class="search-history-badge" id="search-history-badge"></span>' + 
+    '           </div>' + 
+    '           <button type="button" class="search-history-clear-btn" id="btn-clear-search-history" title="清空全部搜索记录">清空</button>' + 
+    '       </div>' + 
+    '       <div class="search-history-tags" id="search-history-tags"></div>' + 
+    '   </div>' + 
     '</form>';
 
     layer.open({
@@ -425,6 +435,92 @@ function searchBox() {
                 $(this).addClass('active');
                 $(this).find('input[type="radio"]').prop('checked', true);
             });
+
+            // 渲染最近搜索记录 (支持当前账号云端漫游)
+            function renderSearches(list, isCloud) {
+                var $box = layero.find('#search-history-container');
+                var $tags = layero.find('#search-history-tags');
+                var $badge = layero.find('#search-history-badge');
+                if (!list || list.length === 0) {
+                    $box.hide();
+                    return;
+                }
+                $box.show();
+                if (isCloud && window.CloudVault && CloudVault.user && CloudVault.user.username) {
+                    $badge.text('☁️ ' + CloudVault.user.username + ' 漫游').attr('title', '搜索历史已实时绑定并漫游至当前账号');
+                } else if (isCloud) {
+                    $badge.text('☁️ 云端漫游').attr('title', '搜索历史已实时漫游至云端');
+                } else {
+                    $badge.text('📱 本地漫游 · 登录可多端同步').attr('title', '登录账号即可在电脑、手机多端同步搜索记录');
+                }
+
+                var html = '';
+                for (var i = 0; i < list.length; i++) {
+                    var item = list[i];
+                    var kw = typeof item === 'string' ? item : item.keyword;
+                    var src = (item && item.source) ? item.source : 'all';
+                    if (!kw) continue;
+                    var escapedKw = $('<div>').text(kw).html();
+                    html += '<div class="search-history-pill" data-keyword="' + escapedKw + '" data-source="' + src + '">' +
+                        '<span class="pill-kw">' + escapedKw + '</span>' +
+                        '<span class="pill-del" title="删除此记录">&times;</span>' +
+                        '</div>';
+                }
+                $tags.html(html);
+
+                // 点击标签自动回填并直接触发检索
+                $tags.find('.search-history-pill').on('click', function(e) {
+                    if ($(e.target).hasClass('pill-del')) return;
+                    var kw = $(this).data('keyword');
+                    var src = $(this).data('source') || 'all';
+                    $('#search-wd').val(kw);
+                    // 自动切换对应平台
+                    layero.find('.source-pill-btn').removeClass('active');
+                    var $matchedRadio = layero.find('.source-pill-btn input[value="' + src + '"]');
+                    if ($matchedRadio.length) {
+                        $matchedRadio.prop('checked', true).closest('.source-pill-btn').addClass('active');
+                    } else {
+                        layero.find('.source-pill-btn input[value="all"]').prop('checked', true).closest('.source-pill-btn').addClass('active');
+                    }
+                    searchSubmit();
+                });
+
+                // 单条删除
+                $tags.find('.pill-del').on('click', function(e) {
+                    e.stopPropagation();
+                    var $pill = $(this).closest('.search-history-pill');
+                    var kw = $pill.data('keyword');
+                    $pill.fadeOut(150, function() {
+                        $(this).remove();
+                        if ($tags.find('.search-history-pill').length === 0) {
+                            $box.slideUp(150);
+                        }
+                    });
+                    if (window.CloudVault && typeof CloudVault.deleteSearch === 'function') {
+                        CloudVault.deleteSearch(kw);
+                    }
+                });
+            }
+
+            // 获取搜索历史
+            if (window.CloudVault && typeof CloudVault.getRecentSearches === 'function') {
+                CloudVault.getRecentSearches(renderSearches);
+            } else {
+                try {
+                    var raw = localStorage.getItem('mk_recent_searches');
+                    if (raw) renderSearches(JSON.parse(raw), false);
+                } catch(e) {}
+            }
+
+            // 清空所有历史记录
+            layero.find('#btn-clear-search-history').on('click', function() {
+                layero.find('#search-history-container').slideUp(180);
+                if (window.CloudVault && typeof CloudVault.deleteSearch === 'function') {
+                    CloudVault.deleteSearch('');
+                } else {
+                    try { localStorage.removeItem('mk_recent_searches'); } catch(e) {}
+                }
+            });
         }
     });
 }
@@ -438,6 +534,11 @@ function searchSubmit() {
         return false;
     }
     rem.source = $("#music-source input[name='source']:checked").val() || 'all';
+    
+    // 记录到当前账号云端与本地搜索历史
+    if (window.CloudVault && typeof CloudVault.recordSearch === 'function') {
+        CloudVault.recordSearch(wd, rem.source);
+    }
     
     layer.closeAll('page');     // 关闭搜索框
     

@@ -921,6 +921,15 @@ class MusicStorage
                         UNIQUE(uid, song_id, source)
                     );
                     CREATE INDEX IF NOT EXISTS idx_fav_uid ON cloud_favorites(uid);
+                    CREATE TABLE IF NOT EXISTS cloud_searches (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        uid TEXT NOT NULL,
+                        keyword TEXT NOT NULL,
+                        source TEXT DEFAULT 'all',
+                        searched_at INTEGER,
+                        UNIQUE(uid, keyword)
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_search_uid_time ON cloud_searches(uid, searched_at DESC);
                 ");
                 self::$useSqlite = true;
                 return;
@@ -1440,6 +1449,94 @@ class MusicStorage
             return $res;
         }
     }
+
+    /* ---------------------------------------------------------
+     * 搜索历史云端持久化 (歌手/歌曲检索记录漫游)
+     * --------------------------------------------------------- */
+    public static function recordSearch($uid, $keyword, $source = 'all')
+    {
+        $uid = trim((string)$uid);
+        $keyword = trim((string)$keyword);
+        $source = trim((string)$source);
+        if ($source === '') $source = 'all';
+        if ($uid === '' || $keyword === '') return false;
+        $now = time();
+
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("INSERT INTO cloud_searches (uid, keyword, source, searched_at)
+                VALUES (:uid, :kw, :src, :t)
+                ON CONFLICT(uid, keyword) DO UPDATE SET searched_at = :t, source = :src");
+            $stmt->execute([':uid' => $uid, ':kw' => $keyword, ':src' => $source, ':t' => $now]);
+            self::$pdo->exec("DELETE FROM cloud_searches WHERE id NOT IN (SELECT id FROM cloud_searches WHERE uid = " . self::$pdo->quote($uid) . " ORDER BY searched_at DESC LIMIT 50) AND uid = " . self::$pdo->quote($uid));
+            return true;
+        } else {
+            $d = self::getJsonData();
+            if (!isset($d['searches'][$uid])) $d['searches'][$uid] = [];
+            $newList = [];
+            foreach ($d['searches'][$uid] as $item) {
+                if ($item['keyword'] === $keyword) continue;
+                $newList[] = $item;
+            }
+            array_unshift($newList, [
+                'keyword' => $keyword,
+                'source' => $source,
+                'searched_at' => $now
+            ]);
+            $d['searches'][$uid] = array_slice($newList, 0, 50);
+            self::saveJsonData($d);
+            return true;
+        }
+    }
+
+    public static function getSearches($uid, $limit = 20)
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '') return [];
+        $limit = max(1, min(50, (int)$limit));
+
+        if (self::$useSqlite && self::$pdo) {
+            $stmt = self::$pdo->prepare("SELECT keyword, source, searched_at FROM cloud_searches WHERE uid = :uid ORDER BY searched_at DESC LIMIT " . $limit);
+            $stmt->execute([':uid' => $uid]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } else {
+            $d = self::getJsonData();
+            if (!isset($d['searches'][$uid])) return [];
+            return array_slice($d['searches'][$uid], 0, $limit);
+        }
+    }
+
+    public static function deleteSearch($uid, $keyword = '')
+    {
+        $uid = trim((string)$uid);
+        if ($uid === '') return false;
+        $keyword = trim((string)$keyword);
+
+        if (self::$useSqlite && self::$pdo) {
+            if ($keyword !== '') {
+                $stmt = self::$pdo->prepare("DELETE FROM cloud_searches WHERE uid = :uid AND keyword = :kw");
+                $stmt->execute([':uid' => $uid, ':kw' => $keyword]);
+            } else {
+                $stmt = self::$pdo->prepare("DELETE FROM cloud_searches WHERE uid = :uid");
+                $stmt->execute([':uid' => $uid]);
+            }
+            return true;
+        } else {
+            $d = self::getJsonData();
+            if (!isset($d['searches'][$uid])) return true;
+            if ($keyword !== '') {
+                $newList = [];
+                foreach ($d['searches'][$uid] as $item) {
+                    if ($item['keyword'] === $keyword) continue;
+                    $newList[] = $item;
+                }
+                $d['searches'][$uid] = $newList;
+            } else {
+                $d['searches'][$uid] = [];
+            }
+            self::saveJsonData($d);
+            return true;
+        }
+    }
 }
 MusicStorage::init();
 
@@ -1594,12 +1691,14 @@ switch ($type) {
         $key = 'usr_' . $acc['username'];
         $favCount = count(MusicStorage::getFavorites($key));
         $histCount = count(MusicStorage::getHistory($key, 300));
+        $searchCount = count(MusicStorage::getSearches($key, 50));
         out_json([
             'code' => 200,
             'user' => $acc,
             'stat' => [
                 'favorites' => $favCount,
-                'history' => $histCount
+                'history' => $histCount,
+                'searches' => $searchCount
             ]
         ]);
 
@@ -1623,12 +1722,14 @@ switch ($type) {
         $user = MusicStorage::syncUser($uid, $nick, $avatar);
         $favCount = count(MusicStorage::getFavorites($uid));
         $histCount = count(MusicStorage::getHistory($uid, 300));
+        $searchCount = count(MusicStorage::getSearches($uid, 50));
         out_json([
             'code' => 200,
             'user' => $user,
             'stat' => [
                 'favorites' => $favCount,
-                'history' => $histCount
+                'history' => $histCount,
+                'searches' => $searchCount
             ]
         ]);
 
@@ -1666,13 +1767,40 @@ switch ($type) {
         $list = MusicStorage::getFavorites($key);
         out_json(['code' => 200, 'list' => $list]);
 
+    case 'record_search':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $key = MusicStorage::resolveKey($tok, $uid);
+        $keyword = isset($_REQUEST['keyword']) ? trim($_REQUEST['keyword']) : '';
+        $source = isset($_REQUEST['source']) ? trim($_REQUEST['source']) : 'all';
+        if ($key === '' || $keyword === '') out_json(['code' => 400, 'msg' => 'Key or keyword missing']);
+        $ok = MusicStorage::recordSearch($key, $keyword, $source);
+        out_json(['code' => $ok ? 200 : 500]);
+
+    case 'get_searches':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $key = MusicStorage::resolveKey($tok, $uid);
+        $limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
+        if ($key === '') out_json(['code' => 200, 'list' => []]);
+        $list = MusicStorage::getSearches($key, $limit);
+        out_json(['code' => 200, 'list' => $list]);
+
+    case 'delete_search':
+        $tok = isset($_REQUEST['token']) ? trim($_REQUEST['token']) : '';
+        $uid = isset($_REQUEST['uid']) ? trim($_REQUEST['uid']) : '';
+        $key = MusicStorage::resolveKey($tok, $uid);
+        $keyword = isset($_REQUEST['keyword']) ? trim($_REQUEST['keyword']) : '';
+        if ($key === '') out_json(['code' => 400, 'msg' => 'Key missing']);
+        $ok = MusicStorage::deleteSearch($key, $keyword);
+        out_json(['code' => $ok ? 200 : 500]);
 
     default:
         // 未匹配时返回就绪状态
         out_json([
             'status' => 'ready',
-            'version' => '2.2.0',
-            'endpoints' => ['search', 'playlist', 'userlist', 'url', 'pic', 'lyric', 'proxy', 'stream', 'sources', 'getsource', 'sync_account', 'record_history', 'get_history', 'toggle_favorite', 'get_favorites']
+            'version' => '2.3.0',
+            'endpoints' => ['search', 'playlist', 'userlist', 'url', 'pic', 'lyric', 'proxy', 'stream', 'sources', 'getsource', 'sync_account', 'record_history', 'get_history', 'toggle_favorite', 'get_favorites', 'record_search', 'get_searches', 'delete_search']
         ]);
 }
 
