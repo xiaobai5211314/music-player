@@ -53,14 +53,16 @@ function pause() {
     } else {
         // 第一次点播放
         if(rem.playlist === undefined) {
-            rem.playlist = rem.dislist;
+            rem.playlist = (rem.dislist !== undefined) ? rem.dislist : 1;
             
-            musicList[1].item = musicList[rem.playlist].item; // 更新正在播放列表中音乐
+            if(musicList[rem.playlist] && musicList[rem.playlist].item && musicList[rem.playlist].item.length > 0) {
+                musicList[1].item = [].concat(musicList[rem.playlist].item);
+                playerSavedata('playing', musicList[1].item);
+            }
             
-            // 正在播放 列表项已发生变更，进行保存
-            playerSavedata('playing', musicList[1].item);   // 保存正在播放列表
-            
-            listClick(0);
+            var playIdx = (rem.playid !== undefined && rem.playid >= 0) ? rem.playid : 0;
+            listClick(playIdx);
+            return;
         }
         rem.audio[0].play();
     }
@@ -226,24 +228,28 @@ function updateProgress(){
 // 显示的列表中的某一项点击后的处理函数
 // 参数：歌曲在列表中的编号
 function listClick(no) {
-    // 记录要播放的歌曲的id
     var tmpid = no;
     
+    // 校验当前视图列表中是否存在该曲目
+    if (!musicList[rem.dislist] || !musicList[rem.dislist].item || !musicList[rem.dislist].item[no]) {
+        return false;
+    }
+    
     // 调试信息输出
-    if(mkPlayer.debug && musicList[rem.dislist] && musicList[rem.dislist].item[no]) {
+    if(mkPlayer.debug) {
         console.log("点播了列表中的第 " + (no + 1) + " 首歌 " + musicList[rem.dislist].item[no].name);
     }
     
-    // 如果当前视图列表不是“正在播放”列表(1)，且与当前生效的播放队列不同或是首次点播
-    if(rem.dislist !== 1 && (rem.dislist !== rem.playlist || rem.playlist === undefined)) {
+    // 只要当前视图不是“正在播放”列表(1)，就立即将当前视图列表完整同步为正在播放队列，确保按当前歌单顺序播放并消除跨歌单旧缓存错位
+    if(rem.dislist !== 1) {
         rem.playlist = rem.dislist;     // 记录正在播放的列表为当前视图列表（包括搜索结果或各大平台歌单）
         musicList[1].item = [].concat(musicList[rem.playlist].item); // 完整载入当前列表为正在播放队列
-        
-        // 正在播放列表发生变更，持久化保存
-        playerSavedata('playing', musicList[1].item);
-        
-        // 刷新歌单卡片与界面状态
+        playerSavedata('playing', musicList[1].item);   // 持久化保存
         refreshSheet();
+    } else {
+        if(rem.playlist === undefined) {
+            rem.playlist = 1;
+        }
     }
     
     tmpid = no;
@@ -255,14 +261,16 @@ function listClick(no) {
 // 播放正在播放列表中的歌曲
 // 参数：歌曲在列表中的ID
 function playList(id) {
-    // 第一次播放
+    // 兜底保障播放列表已初始化
     if(rem.playlist === undefined) {
-        pause();
-        return true;
+        rem.playlist = (rem.dislist !== undefined) ? rem.dislist : 1;
+        if(musicList[rem.playlist] && musicList[rem.playlist].item && rem.dislist !== 1) {
+            musicList[1].item = [].concat(musicList[rem.playlist].item);
+        }
     }
     
     // 没有歌曲，跳出
-    if(musicList[1].item.length <= 0) return true;
+    if(!musicList[1] || !musicList[1].item || musicList[1].item.length <= 0) return true;
     
     // ID 范围限定
     if(id >= musicList[1].item.length) id = 0;
@@ -341,7 +349,11 @@ function play(music) {
     
     try {
         rem.audio[0].pause();
+        try { rem.audio[0].currentTime = 0; } catch(err){}
         rem.audio.attr('src', music.url);
+        if(rem.audio[0].load) {
+            rem.audio[0].load();
+        }
         if(rem.speed && rem.audio[0]) {
             rem.audio[0].playbackRate = rem.speed;
         }

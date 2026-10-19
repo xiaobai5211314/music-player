@@ -364,7 +364,7 @@ header("Expires: 0");
 <script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
 
 <!-- 播放器数据加载模块 -->
-<script src="js/ajax.v2.js?v=2.3.1"></script>
+<script src="js/ajax.v2.js?v=2.3.3"></script>
 
 <!-- 音源后端中心：切换 / 添加接口（链接或导入 .js 文件） -->
 <script src="js/sourcehub.v2.js?v=2.3.1"></script>
@@ -376,10 +376,10 @@ header("Expires: 0");
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.v2.js?v=2.3.2"></script>
+<script src="js/functions.v2.js?v=2.3.3"></script>
 
 <!-- 播放器主体功能模块 (包含倍速持久化/时间进度条/红心收藏/快捷键) -->
-<script src="js/player.v2.js?v=2.3.2"></script>
+<script src="js/player.v2.js?v=2.3.3"></script>
 
 <!-- 网易云账号与 SQLite 云端数据持久化模块 -->
 <script src="js/cloud-vault.js?v=2.3.1"></script>

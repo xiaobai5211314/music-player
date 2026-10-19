@@ -75,20 +75,24 @@ $(function(){
         }
     });
     
-    // 列表项双击播放
-    $(".music-list").on("dblclick",".list-item", function() {
+    // 列表项单击秒播 (全端统一：PC 与移动端均支持单击即播)
+    $(".music-list").on("click", ".list-item", function(e) {
+        if ($(this).hasClass("list-head") || $(this).hasClass("list-loadmore") || $(this).attr("id") === "list-foot") return;
+        // 如果点击的是右侧下载、分享、更多等子功能图标，不触发整行播放
+        if ($(e.target).closest(".icon-download, .icon-share, .list-mobile-menu").length > 0) {
+            return;
+        }
         var num = parseInt($(this).data("no"));
-        if(isNaN(num)) return false;
+        if (isNaN(num)) return false;
         listClick(num);
     });
     
-    // 移动端列表项单击播放
-    $(".music-list").on("click",".list-item", function() {
-        if(rem.isMobile) {
-            var num = parseInt($(this).data("no"));
-            if(isNaN(num)) return false;
-            listClick(num);
-        }
+    // 列表项双击播放兜底
+    $(".music-list").on("dblclick", ".list-item", function(e) {
+        if ($(this).hasClass("list-head") || $(this).hasClass("list-loadmore")) return;
+        var num = parseInt($(this).data("no"));
+        if (isNaN(num)) return false;
+        listClick(num);
     });
     
     // 小屏幕点击右侧小点查看歌曲详细信息
@@ -724,24 +728,23 @@ function updateMinfo(music) {
 
 // 刷新当前显示的列表，如果有正在播放则添加样式
 function refreshList() {
-    // 还没播放过，不用对比了
-    if(rem.playlist === undefined) return true;
+    // 还没播放过或无有效索引，不用对比了
+    if(rem.playlist === undefined || rem.playid === undefined) return true;
+    if(!musicList[1] || !musicList[1].item || !musicList[1].item[rem.playid]) return true;
+    if(!musicList[rem.dislist] || !musicList[rem.dislist].item) return true;
     
     $(".list-playing").removeClass("list-playing");        // 移除其它的正在播放
     
-    if(rem.paused !== true) {   // 没有暂停
-        for(var i=0; i<musicList[rem.dislist].item.length; i++) {
-            // 与正在播放的歌曲 id 相同
-            if((musicList[rem.dislist].item[i].id !== undefined) && 
-              (musicList[rem.dislist].item[i].id == musicList[1].item[rem.playid].id) && 
-              (musicList[rem.dislist].item[i].source == musicList[1].item[rem.playid].source)) {
-                $(".list-item[data-no='" + i + "']").addClass("list-playing");  // 添加正在播放样式
-                
-                return true;    // 一般列表中只有一首，找到了赶紧跳出
-            }
+    var curMusic = musicList[1].item[rem.playid];
+    for(var i=0; i<musicList[rem.dislist].item.length; i++) {
+        var item = musicList[rem.dislist].item[i];
+        if(item && item.id !== undefined && 
+          item.id == curMusic.id && 
+          (item.source == curMusic.source || !item.source || !curMusic.source)) {
+            $(".list-item[data-no='" + i + "']").addClass("list-playing");  // 添加正在播放样式
+            return true;    // 找到了赶紧跳出
         }
     }
-    
 }
 // 添加一个歌单
 // 参数：编号、歌单名字、歌单封面

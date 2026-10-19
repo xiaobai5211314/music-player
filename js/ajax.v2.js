@@ -58,6 +58,9 @@ function ajaxSearch() {
                     return false;
                 }
                 musicList[0].item = [];
+                if (rem.playlist === 0 && musicList[1]) {
+                    musicList[1].item = []; // 搜索新关键词时，同步清空正在播放队列中上一批搜索的旧歌曲
+                }
                 rem.mainList.html('');   // 清空列表中原有的元素
                 addListhead();      // 加载列表头
             } else {
