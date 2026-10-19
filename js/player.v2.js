@@ -270,12 +270,36 @@ function playList(id) {
     
     // 记录正在播放的歌曲在正在播放列表中的 id
     rem.playid = id;
+    var targetMusic = musicList[1].item[id];
+    
+    // ⚡ 1. 瞬时响应：立刻停掉上一首残留音频，不拖泥带水
+    if(rem.audio && rem.audio[0]) {
+        try { rem.audio[0].pause(); } catch(e){}
+    }
+    
+    // ⚡ 2. 界面瞬间刷新：高亮位置、底栏歌曲名、封面、进度归零，点一下秒响应！
+    music_bar.goto(0);
+    $("#music-cur-time").text("00:00");
+    syncFooterSong(targetMusic);
+    changeCover(targetMusic);
+    if(rem.dislist == 2 && rem.playlist !== 2) {
+        loadList(2);
+    } else {
+        refreshList();
+    }
+    
+    // ⚡ 3. 序列防重令牌：用户快速连点上一曲/下一曲时，自动丢弃旧网络回调，彻底解决卡死卡顿
+    rem.playSeq = (rem.playSeq || 0) + 1;
+    var curSeq = rem.playSeq;
     
     // 如果链接为空，则 ajax 获取数据后再播放
-    if(musicList[1].item[id].url === null || musicList[1].item[id].url === "") {
-        ajaxUrl(musicList[1].item[id], play);
+    if(targetMusic.url === null || targetMusic.url === "") {
+        ajaxUrl(targetMusic, function(m) {
+            if(curSeq !== rem.playSeq) return; // 已经切换为其他歌曲，丢弃过时回调
+            play(m);
+        });
     } else {
-        play(musicList[1].item[id]);
+        play(targetMusic);
     }
 }
 
@@ -305,17 +329,6 @@ function play(music) {
     // 调试信息输出
     if(mkPlayer.debug) {
         console.log('开始播放 - ' + music.name);
-        
-        console.info('id: "' + music.id + '",\n' + 
-        'name: "' + music.name + '",\n' +
-        'artist: "' + music.artist + '",\n' +
-        'album: "' + music.album + '",\n' +
-        'source: "' + music.source + '",\n' +
-        'url_id: "' + music.url_id + '",\n' + 
-        'pic_id: "' + music.pic_id + '",\n' + 
-        'lyric_id: "' + music.lyric_id + '",\n' + 
-        'pic: "' + music.pic + '",\n' +
-        'url: "' + music.url + '"');
     }
     
     // 遇到错误播放下一首歌
@@ -326,22 +339,22 @@ function play(music) {
     
     addHis(music);  // 添加到播放历史
     
-    // 如果当前主界面显示的是播放历史，那么还需要刷新列表显示
-    if(rem.dislist == 2 && rem.playlist !== 2) {
-        loadList(2);
-    } else {
-        refreshList();  // 更新列表显示
-    }
-    
     try {
         rem.audio[0].pause();
         rem.audio.attr('src', music.url);
         if(rem.speed && rem.audio[0]) {
             rem.audio[0].playbackRate = rem.speed;
         }
-        rem.audio[0].play();
+        var p = rem.audio[0].play();
+        if(p !== undefined) {
+            p.catch(function(e) {
+                // 频繁切歌造成的 AbortError 静默处理，避免打断交互
+                if(e && e.name === 'AbortError') return;
+                console.warn('播放中断或失败:', e);
+            });
+        }
     } catch(e) {
-        audioErr(); // 调用错误处理函数
+        audioErr();
         return;
     }
     
@@ -352,6 +365,15 @@ function play(music) {
     changeCover(music);    // 更新封面展示
     ajaxLyric(music, lyricCallback);     // ajax加载歌词
     music_bar.lock(false);  // 取消进度条锁定
+    
+    // ⚡ 4. 智能预缓存下一首直链（1.5s 后静默拉取下一首音频 URL，切下一曲 0ms 丝滑秒播）
+    var nextId = (rem.playid + 1) >= musicList[1].item.length ? 0 : (rem.playid + 1);
+    if(musicList[1].item[nextId] && !musicList[1].item[nextId].url) {
+        clearTimeout(rem.prefetchTimer);
+        rem.prefetchTimer = setTimeout(function(){
+            ajaxUrl(musicList[1].item[nextId], function(){});
+        }, 1500);
+    }
 }
 
 

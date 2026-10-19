@@ -987,8 +987,26 @@ body {
     transform: scale(0.94) !important;
 }
 
-/* 正在播放中（点击暂停）：纯白双竖线暂停图标 */
+/* 处于暂停中（点击开始播放）：纯白三角形播放图标，光学微偏右1px视觉绝对居中 */
 .player-controls .btn-play:after {
+    content: '' !important;
+    display: block !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-38%, -50%) !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    border-style: solid !important;
+    border-width: 7px 0 7px 12px !important;
+    border-color: transparent transparent transparent #ffffff !important;
+    border-radius: 1.5px !important;
+}
+
+/* 处于播放中（点击执行暂停）：纯白双竖线暂停图标 */
+.player-controls .btn-play.btn-state-paused:after {
     content: '' !important;
     display: block !important;
     position: absolute !important;
@@ -1005,24 +1023,6 @@ body {
     border-bottom: none !important;
     box-sizing: border-box !important;
     border-radius: 1px !important;
-}
-
-/* 处于暂停中（点击播放）：纯白三角形播放图标，光学微偏右1px视觉绝对居中 */
-.player-controls .btn-play.btn-state-paused:after {
-    content: '' !important;
-    display: block !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-38%, -50%) !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
-    background-image: none !important;
-    border-style: solid !important;
-    border-width: 7px 0 7px 12px !important;
-    border-color: transparent transparent transparent #ffffff !important;
-    border-radius: 1.5px !important;
 }
 
 /* 歌词视窗切换按钮：高质感微型胶囊 */
@@ -1682,4 +1682,196 @@ body {
         height: 18px !important;
     }
 }
+
+/* ==============================================================
+ * Claude 官方美学：全网音乐搜索高质感暗黑弹窗 (彻底去除原生圆圈)
+ * ============================================================== */
+.layui-layer.claude-search-layer-box {
+    background: rgba(28, 25, 23, 0.96) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    overflow: hidden !important;
+}
+
+.claude-search-layer-box .layui-layer-content {
+    background: transparent !important;
+    padding: 0 !important;
+    color: #f3eee8 !important;
+    overflow: visible !important;
+}
+
+#claude-search-form {
+    padding: 24px 26px 22px !important;
+    box-sizing: border-box !important;
+}
+
+.search-modal-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 18px !important;
+}
+
+.search-modal-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.search-modal-icon {
+    font-size: 16px !important;
+    line-height: 1 !important;
+}
+
+.search-modal-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #f5f0eb !important;
+    letter-spacing: 0.5px !important;
+}
+
+.search-modal-close {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    font-size: 20px !important;
+    line-height: 26px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    padding: 0 !important;
+}
+
+.search-modal-close:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    transform: rotate(90deg) !important;
+}
+
+/* 搜索输入与提交组合 */
+#claude-search-form .search-group {
+    display: flex !important;
+    align-items: stretch !important;
+    margin-bottom: 18px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    transition: all 0.25s ease !important;
+}
+
+#claude-search-form .search-group:focus-within {
+    border-color: var(--claude-terracotta, #c86545) !important;
+    box-shadow: 0 0 0 3px rgba(200, 101, 69, 0.25) !important;
+    background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.search-input-wrapper {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#claude-search-form #search-wd {
+    width: 100% !important;
+    height: 44px !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 16px !important;
+    font-size: 14px !important;
+    color: #ffffff !important;
+    box-sizing: border-box !important;
+}
+
+#claude-search-form #search-wd::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+#claude-search-form .search-submit {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    padding: 0 22px !important;
+    background: var(--claude-terracotta, #c86545) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    letter-spacing: 1px !important;
+    transition: all 0.2s ease !important;
+}
+
+#claude-search-form .search-submit:hover {
+    background: var(--claude-terracotta-hover, #d97757) !important;
+}
+
+/* 音源平台：分段胶囊按钮组 (彻底清除圆圈) */
+.search-source-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+.source-section-label {
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-weight: 500 !important;
+}
+
+.source-pill-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 7px !important;
+}
+
+/* 隐藏原生 HTML 单选圆圈输入框 */
+.source-pill-btn input[type="radio"] {
+    display: none !important;
+    appearance: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+}
+
+/* 现代化胶囊药丸按钮样式 */
+.source-pill-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    user-select: none !important;
+}
+
+.source-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+.source-pill-btn.active,
+.source-pill-btn:has(input[type="radio"]:checked) {
+    background: var(--claude-terracotta, #c86545) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-color: var(--claude-terracotta, #c86545) !important;
+    box-shadow: 0 3px 12px rgba(200, 101, 69, 0.42) !important;
+}
+
 

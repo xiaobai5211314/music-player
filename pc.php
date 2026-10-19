@@ -85,7 +85,7 @@ body{
     <link rel="stylesheet" href="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.css" id="layuicss-skinlayercss">
 
     <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
-    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.3.0">
+    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.3.2">
 </head>
 <body>
 <!-- 顶部现代化一体化导航与云端账户控制台 (Claude Code 风格) -->
@@ -256,10 +256,10 @@ body{
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.v2.js?v=2.3.1"></script>
+<script src="js/functions.v2.js?v=2.3.2"></script>
 
 <!-- 播放器主体功能模块 -->
-<script src="js/player.v2.js?v=2.3.1"></script>
+<script src="js/player.v2.js?v=2.3.2"></script>
 
 <!-- 网易云账号与 SQLite 云端数据持久化模块 -->
 <script src="js/cloud-vault.js?v=2.3.1"></script>

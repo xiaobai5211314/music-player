@@ -379,49 +379,61 @@ function musicInfo(list, index) {
 // 展现搜索弹窗
 function searchBox() {
     var curSource = rem.source || 'all';
-    var tmpHtml = '<form onSubmit="return searchSubmit()"><div id="search-area">' + 
+    var tmpHtml = '<form onSubmit="return searchSubmit()" id="claude-search-form">' + 
+    '    <div class="search-modal-header">' + 
+    '        <div class="search-modal-header-left">' + 
+    '            <span class="search-modal-icon">🔍</span>' + 
+    '            <span class="search-modal-title">全网音乐检索</span>' + 
+    '        </div>' + 
+    '        <button type="button" class="search-modal-close" onclick="layer.closeAll(\'page\');" title="关闭">&times;</button>' + 
+    '    </div>' + 
     '    <div class="search-group">' + 
-    '        <input type="text" name="wd" id="search-wd" placeholder="搜索歌手、歌名、专辑" autofocus required>' + 
+    '        <div class="search-input-wrapper">' + 
+    '            <input type="text" name="wd" id="search-wd" placeholder="搜索歌曲名、歌手、专辑..." autofocus required autocomplete="off">' + 
+    '        </div>' + 
     '        <button class="search-submit" type="submit">搜 索</button>' + 
     '    </div>' + 
-    '    <div class="radio-group" id="music-source">' + 
-    '       <label title="全网并发智能检索，版权覆盖最全"><input type="radio" name="source" value="all"> 聚合全网</label>' + 
-    '       <label><input type="radio" name="source" value="netease"> 网易云</label>' + 
-    '       <label><input type="radio" name="source" value="tencent"> QQ音乐</label>' + 
-    '       <label><input type="radio" name="source" value="kugou"> 酷狗音乐</label>' + 
-    '       <label><input type="radio" name="source" value="kuwo"> 酷我音乐</label>' + 
+    '    <div class="search-source-section">' + 
+    '       <span class="source-section-label">音源平台</span>' + 
+    '       <div class="source-pill-group" id="music-source">' + 
+    '           <label class="source-pill-btn' + (curSource === 'all' ? ' active' : '') + '"><input type="radio" name="source" value="all"' + (curSource === 'all' ? ' checked' : '') + '><span>✨ 聚合全网</span></label>' + 
+    '           <label class="source-pill-btn' + (curSource === 'netease' ? ' active' : '') + '"><input type="radio" name="source" value="netease"' + (curSource === 'netease' ? ' checked' : '') + '><span>网易云</span></label>' + 
+    '           <label class="source-pill-btn' + (curSource === 'tencent' || curSource === 'qq' ? ' active' : '') + '"><input type="radio" name="source" value="tencent"' + (curSource === 'tencent' || curSource === 'qq' ? ' checked' : '') + '><span>QQ音乐</span></label>' + 
+    '           <label class="source-pill-btn' + (curSource === 'kugou' ? ' active' : '') + '"><input type="radio" name="source" value="kugou"' + (curSource === 'kugou' ? ' checked' : '') + '><span>酷狗音乐</span></label>' + 
+    '           <label class="source-pill-btn' + (curSource === 'kuwo' ? ' active' : '') + '"><input type="radio" name="source" value="kuwo"' + (curSource === 'kuwo' ? ' checked' : '') + '><span>酷我音乐</span></label>' + 
+    '       </div>' + 
     '   </div>' + 
-    '</div></form>';
+    '</form>';
+
     layer.open({
         type: 1,
-        shade: false,
+        shade: [0.65, '#000000'],
         title: false, // 不显示标题
-        shade: 0.5,    // 遮罩颜色深度
+        closeBtn: 0,
         shadeClose: true,
+        skin: 'claude-search-layer-box',
+        area: rem.isMobile ? ['92%', 'auto'] : ['480px', 'auto'],
         content: tmpHtml,
-        cancel: function(){
+        success: function(layero, index) {
+            $("#search-wd").focus().val(rem.wd || '');
+            layero.find('.source-pill-btn').on('click', function() {
+                layero.find('.source-pill-btn').removeClass('active');
+                $(this).addClass('active');
+                $(this).find('input[type="radio"]').prop('checked', true);
+            });
         }
     });
-    
-    // 恢复上一次的输入
-    $("#search-wd").focus().val(rem.wd);
-    var $matchInput = $("#music-source input[name='source'][value='" + curSource + "']");
-    if ($matchInput.length) {
-        $matchInput.prop("checked", true);
-    } else {
-        $("#music-source input[name='source'][value='all']").prop("checked", true);
-    }
 }
 
 // 搜索提交
 function searchSubmit() {
-    var wd = $("#search-wd").val();
+    var wd = $.trim($("#search-wd").val());
     if(!wd) {
         layer.msg('搜索内容不能为空', {anim:6, offset: 't'});
         $("#search-wd").focus();
         return false;
     }
-    rem.source = $("#music-source input[name='source']:checked").val();
+    rem.source = $("#music-source input[name='source']:checked").val() || 'all';
     
     layer.closeAll('page');     // 关闭搜索框
     
