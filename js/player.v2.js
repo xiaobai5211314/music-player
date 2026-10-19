@@ -70,12 +70,20 @@ function pause() {
 function orderChange() {
     var orderDiv = $(".btn-order");
     orderDiv.removeClass();
+    rem.order = rem.order || 2;
     switch(rem.order) {
         case 1:     // 单曲循环 -> 列表循环
             orderDiv.addClass("player-btn btn-order btn-order-list");
             orderDiv.attr("title", "列表循环");
             layer.msg("列表循环");
             rem.order = 2;
+            break;
+            
+        case 2:     // 列表循环 -> 随机播放
+            orderDiv.addClass("player-btn btn-order btn-order-random");
+            orderDiv.attr("title", "随机播放");
+            layer.msg("随机播放");
+            rem.order = 3;
             break;
             
         case 3:     // 随机播放 -> 单曲循环
@@ -85,12 +93,11 @@ function orderChange() {
             rem.order = 1;
             break;
             
-        // case 2:
-        default:    // 列表循环(其它) -> 随机播放
-            orderDiv.addClass("player-btn btn-order btn-order-random");
-            orderDiv.attr("title", "随机播放");
-            layer.msg("随机播放");
-            rem.order = 3;
+        default:
+            orderDiv.addClass("player-btn btn-order btn-order-list");
+            orderDiv.attr("title", "列表循环");
+            layer.msg("列表循环");
+            rem.order = 2;
     }
 }
 
@@ -151,8 +158,9 @@ function prevMusic() {
 
 // 播放下一首歌
 function nextMusic() {
-    switch (rem.order ? rem.order : 1) {
-        case 1,2: 
+    switch (rem.order ? rem.order : 2) {
+        case 1:
+        case 2: 
             playList(rem.playid + 1);
         break;
         case 3: 
@@ -222,53 +230,23 @@ function listClick(no) {
     var tmpid = no;
     
     // 调试信息输出
-    if(mkPlayer.debug) {
+    if(mkPlayer.debug && musicList[rem.dislist] && musicList[rem.dislist].item[no]) {
         console.log("点播了列表中的第 " + (no + 1) + " 首歌 " + musicList[rem.dislist].item[no].name);
     }
     
-    // 搜索列表的歌曲要额外处理
-    if(rem.dislist === 0) {
+    // 如果当前视图列表不是“正在播放”列表(1)，且与当前生效的播放队列不同或是首次点播
+    if(rem.dislist !== 1 && (rem.dislist !== rem.playlist || rem.playlist === undefined)) {
+        rem.playlist = rem.dislist;     // 记录正在播放的列表为当前视图列表（包括搜索结果或各大平台歌单）
+        musicList[1].item = [].concat(musicList[rem.playlist].item); // 完整载入当前列表为正在播放队列
         
-        // 没播放过
-        if(rem.playlist === undefined) {
-            rem.playlist = 1;   // 设置播放列表为 正在播放 列表
-            rem.playid = musicList[1].item.length - 1;  // 临时设置正在播放的曲目为 正在播放 列表的最后一首
-        }
+        // 正在播放列表发生变更，持久化保存
+        playerSavedata('playing', musicList[1].item);
         
-        // 获取选定歌曲的信息
-        var tmpMusic = musicList[0].item[no];
-        
-        
-        // 查找当前的播放列表中是否已经存在这首歌
-        for(var i=0; i<musicList[1].item.length; i++) {
-            if(musicList[1].item[i].id == tmpMusic.id && musicList[1].item[i].source == tmpMusic.source) {
-                tmpid = i;
-                playList(tmpid);    // 找到了直接播放
-                return true;    // 退出函数
-            }
-        }
-        
-        
-        // 将点击的这项追加到正在播放的条目的下方
-        musicList[1].item.splice(rem.playid + 1, 0, tmpMusic);
-        tmpid = rem.playid + 1;
-        
-        // 正在播放 列表项已发生变更，进行保存
-        playerSavedata('playing', musicList[1].item);   // 保存正在播放列表
-    } else {    // 普通列表
-        // 与之前不是同一个列表了（在播放别的列表的歌曲）或者是首次播放
-        if((rem.dislist !== rem.playlist && rem.dislist !== 1) || rem.playlist === undefined) {
-            rem.playlist = rem.dislist;     // 记录正在播放的列表
-            musicList[1].item = musicList[rem.playlist].item; // 更新正在播放列表中音乐
-            
-            // 正在播放 列表项已发生变更，进行保存
-            playerSavedata('playing', musicList[1].item);   // 保存正在播放列表
-            
-            // 刷新正在播放的列表的动画
-            refreshSheet();     // 更改正在播放的列表的显示
-        }
+        // 刷新歌单卡片与界面状态
+        refreshSheet();
     }
     
+    tmpid = no;
     playList(tmpid);
     
     return true;

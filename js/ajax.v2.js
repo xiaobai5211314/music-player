@@ -87,6 +87,9 @@ function ajaxSearch() {
                     url: null   // mp3链接
                 };
                 musicList[0].item.push(tempItem);   // 保存到搜索结果临时列表中
+                if (rem.playlist === 0 && musicList[1] && musicList[1].item) {
+                    musicList[1].item.push(tempItem);   // 保持正在播放队列与搜索结果实时同步
+                }
                 addItem(no, tempItem.name, tempItem.artist, tempItem.album);  // 在前端显示
             }
             
@@ -274,11 +277,11 @@ function ajaxPlayList(lid, id, callback) {
                     name: t.name || "未知歌曲",  // 音乐名字
                     artist: artName, // 艺术家名字
                     album: albName,    // 专辑名字
-                    source: "netease",     // 音乐来源
-                    url_id: t.id,  // 链接ID
-                    pic_id: null,  // 封面ID
-                    lyric_id: t.id,  // 歌词ID
-                    pic: picUrl ? (picUrl + "?param=300y300") : "",    // 专辑图片
+                    source: t.source || "netease",     // 音乐来源（支持 qq / kugou / netease）
+                    url_id: t.url_id || t.id,  // 链接ID
+                    pic_id: t.pic_id || null,  // 封面ID
+                    lyric_id: t.lyric_id || t.id,  // 歌词ID
+                    pic: picUrl ? (picUrl.indexOf('?') > 0 ? picUrl : (picUrl + "?param=300y300")) : "",    // 专辑图片
                     url: null   // mp3链接
                 };
             }

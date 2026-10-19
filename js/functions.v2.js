@@ -187,6 +187,67 @@ $(function(){
         });
     });
     
+    // 导入各大平台歌单（支持 QQ音乐 / 网易云 / 酷狗）
+    $("#sheet").on("click", ".login-add", function() {
+        layer.prompt(
+        {
+            title: '导入平台歌单（支持 QQ音乐 / 网易云 / 酷狗 链接或ID）',
+            btn: ['一键导入', '取消']
+        },
+        function(val, index) {
+            val = $.trim(val);
+            if(!val) {
+                layer.msg('请输入歌单链接或 ID', {anim: 6});
+                return false;
+            }
+            layer.close(index);
+            var loadIdx = layer.msg('正在解析并导入歌单...', {icon: 16, shade: 0.2, time: 0});
+            $.ajax({
+                type: mkPlayer.method,
+                url: mkPlayer.api,
+                data: "types=playlist&id=" + encodeURIComponent(val) + "&_t=" + new Date().getTime(),
+                dataType: (mkPlayer.method === "POST" ? "json" : "jsonp"),
+                success: function(res) {
+                    layer.close(loadIdx);
+                    if (!res || !res.playlist || !res.playlist.tracks || res.playlist.tracks.length === 0) {
+                        layer.msg('未解析到有效歌单，请检查链接或 ID 是否有效', {icon: 2});
+                        return;
+                    }
+                    var pl = res.playlist;
+                    var tempList = {
+                        id: pl.id || val,
+                        name: pl.name || "导入歌单",
+                        cover: pl.coverImgUrl || "images/player_cover.png",
+                        creatorID: 'custom',
+                        creatorName: (pl.creator && pl.creator.nickname) ? pl.creator.nickname : "网络精选",
+                        creatorAvatar: (pl.creator && pl.creator.avatarUrl) ? pl.creator.avatarUrl : "",
+                        item: []
+                    };
+                    for (var i = 0; i < musicList.length; i++) {
+                        if (musicList[i].id == tempList.id && musicList[i].name == tempList.name) {
+                            layer.msg('歌单已在列表中，已为您打开');
+                            loadList(i);
+                            return;
+                        }
+                    }
+                    var newIdx = musicList.push(tempList) - 1;
+                    addSheet(newIdx, tempList.name, tempList.cover);
+                    var ulist = playerReaddata('ulist') || [];
+                    ulist.push(tempList);
+                    playerSavedata('ulist', ulist);
+                    layer.msg('🎉 成功导入歌单《' + tempList.name + '》（共 ' + pl.tracks.length + ' 首歌）', {icon: 1});
+                    $("#sheet-bar").remove();
+                    sheetBar();
+                    loadList(newIdx);
+                },
+                error: function(err) {
+                    layer.close(loadIdx);
+                    layer.msg('网络请求异常，解析失败', {icon: 2});
+                }
+            });
+        });
+    });
+    
     // 刷新用户列表
     $("#sheet").on("click",".login-refresh", function() {
         playerSavedata('ulist', '');
@@ -317,17 +378,18 @@ function musicInfo(list, index) {
 
 // 展现搜索弹窗
 function searchBox() {
+    var curSource = rem.source || 'all';
     var tmpHtml = '<form onSubmit="return searchSubmit()"><div id="search-area">' + 
     '    <div class="search-group">' + 
     '        <input type="text" name="wd" id="search-wd" placeholder="搜索歌手、歌名、专辑" autofocus required>' + 
     '        <button class="search-submit" type="submit">搜 索</button>' + 
     '    </div>' + 
     '    <div class="radio-group" id="music-source">' + 
-    '       <label><input type="radio" name="source" value="netease" checked=""> 网易云</label>' + 
-    '       <label><input type="radio" name="source" value="tencent"> QQ</label>' + 
-    '       <label><input type="radio" name="source" value="xiami"> 虾米</label>' + 
-    '       <label><input type="radio" name="source" value="kugou"> 酷狗</label>' + 
-    '       <label><input type="radio" name="source" value="baidu"> 百度</label>' + 
+    '       <label title="全网并发智能检索，版权覆盖最全"><input type="radio" name="source" value="all"> 聚合全网</label>' + 
+    '       <label><input type="radio" name="source" value="netease"> 网易云</label>' + 
+    '       <label><input type="radio" name="source" value="tencent"> QQ音乐</label>' + 
+    '       <label><input type="radio" name="source" value="kugou"> 酷狗音乐</label>' + 
+    '       <label><input type="radio" name="source" value="kuwo"> 酷我音乐</label>' + 
     '   </div>' + 
     '</div></form>';
     layer.open({
@@ -343,7 +405,12 @@ function searchBox() {
     
     // 恢复上一次的输入
     $("#search-wd").focus().val(rem.wd);
-    $("#music-source input[name='source'][value='" + rem.source + "']").prop("checked", "checked");
+    var $matchInput = $("#music-source input[name='source'][value='" + curSource + "']");
+    if ($matchInput.length) {
+        $matchInput.prop("checked", true);
+    } else {
+        $("#music-source input[name='source'][value='all']").prop("checked", true);
+    }
 }
 
 // 搜索提交
@@ -685,9 +752,9 @@ function clearSheet() {
 function sheetBar() {
     var barHtml;
     if(playerReaddata('uid')) {
-        barHtml = '已同步 ' + rem.uname + ' 的歌单 <span class="login-btn login-refresh">[刷新]</span> <span class="login-btn login-out">[退出]</span>';
+        barHtml = '已同步 ' + rem.uname + ' 的歌单 <span class="login-btn login-refresh">[刷新]</span> <span class="login-btn login-add">[+ 导入歌单]</span> <span class="login-btn login-out">[退出]</span>';
     } else {
-        barHtml = '我的歌单 <span class="login-btn login-in">[点击同步]</span>';
+        barHtml = '我的歌单 <span class="login-btn login-in">[网易云同步]</span> <span class="login-btn login-add">[+ 导入平台歌单]</span>';
     }
     barHtml = '<span id="sheet-bar"><div class="clear-fix"></div>' +
     '<div id="user-login" class="sheet-title-bar">' + barHtml + 

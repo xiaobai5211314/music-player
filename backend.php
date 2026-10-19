@@ -395,12 +395,13 @@ function norm_source($s)
 {
     $s = strtolower(trim((string) $s));
     $map = [
+        'all' => 'all', 'aggregate' => 'all',
         'kuwo' => 'kuwo', 'kw' => 'kuwo',
         'kugou' => 'kugou', 'kg' => 'kugou',
         'qq' => 'qq', 'tx' => 'qq', 'tencent' => 'qq',
         'netease' => 'netease', 'wy' => 'netease', '163' => 'netease',
     ];
-    return isset($map[$s]) ? $map[$s] : 'kuwo';
+    return isset($map[$s]) ? $map[$s] : 'all';
 }
 
 /* ---------------------------------------------------------
@@ -505,6 +506,52 @@ function search_netease($kw, $page = 1, $count = 20)
     return $out;
 }
 
+function search_kugou($kw, $page = 1, $count = 20)
+{
+    $url = 'http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword='
+         . rawurlencode($kw) . '&page=' . max(1, (int)$page) . '&pagesize=' . max(1, (int)$count);
+    list($c, $b) = http_request($url, 'GET', ['Referer' => 'https://www.kugou.com/'], null, 8);
+    if ($c !== 200 || empty($b)) return [];
+
+    $j = json_decode($b, true);
+    $list = isset($j['data']['info']) && is_array($j['data']['info']) ? $j['data']['info'] : [];
+    $out = [];
+    foreach ($list as $row) {
+        $hash = isset($row['hash']) ? (string)$row['hash'] : '';
+        if ($hash === '') continue;
+        $singer = isset($row['singername']) ? clean_str($row['singername']) : '未知歌手';
+        $out[] = [
+            'id'       => $hash,
+            'name'     => clean_str(isset($row['songname']) ? $row['songname'] : ''),
+            'artist'   => [$singer],
+            'album'    => clean_str(isset($row['album_name']) ? $row['album_name'] : ''),
+            'source'   => 'kugou',
+            'url_id'   => $hash,
+            'pic_id'   => $hash,
+            'lyric_id' => $hash,
+        ];
+    }
+    return $out;
+}
+
+function search_all($kw, $page = 1, $count = 20)
+{
+    $subCount = max(4, (int)ceil($count / 3));
+    $resWy = search_netease($kw, $page, $subCount);
+    $resQq = search_qq($kw, $page, $subCount);
+    $resKg = search_kugou($kw, $page, $subCount);
+
+    $combined = [];
+    $maxCount = max(count($resWy), count($resQq), count($resKg));
+    for ($i = 0; $i < $maxCount; $i++) {
+        if (isset($resWy[$i])) $combined[] = $resWy[$i];
+        if (isset($resQq[$i])) $combined[] = $resQq[$i];
+        if (isset($resKg[$i])) $combined[] = $resKg[$i];
+        if (count($combined) >= $count) break;
+    }
+    return array_slice($combined, 0, $count);
+}
+
 /* ---------------------------------------------------------
  * 6. 直链解析 (内置官方兜底通道)
  * --------------------------------------------------------- */
@@ -553,6 +600,39 @@ function lyric_kuwo($id)
         $lines[] = sprintf('[%02d:%05.2f]%s', $m, $s, isset($r['lineLyric']) ? $r['lineLyric'] : '');
     }
     return implode("\n", $lines);
+}
+
+function lyric_qq($id)
+{
+    $mid = trim((string)$id);
+    if ($mid === '') return '';
+    $url = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=' . rawurlencode($mid) . '&format=json&nobase64=1';
+    list($c, $b) = http_request($url, 'GET', ['Referer' => 'https://y.qq.com/'], null, 6);
+    if ($c !== 200 || empty($b)) return '';
+    $j = json_decode($b, true);
+    return isset($j['lyric']) ? html_entity_decode((string)$j['lyric'], ENT_QUOTES, 'UTF-8') : '';
+}
+
+function lyric_kugou($id)
+{
+    $hash = trim((string)$id);
+    if ($hash === '') return '';
+    $sUrl = 'http://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=&hash=' . rawurlencode($hash);
+    list($c, $b) = http_request($sUrl, 'GET', [], null, 6);
+    if ($c !== 200 || empty($b)) return '';
+    $j = json_decode($b, true);
+    $cands = isset($j['candidates']) && is_array($j['candidates']) ? $j['candidates'] : [];
+    if (empty($cands)) return '';
+    $c0 = $cands[0];
+    if (empty($c0['id']) || empty($c0['accesskey'])) return '';
+    $dUrl = 'http://lyrics.kugou.com/download?ver=1&client=pc&id=' . rawurlencode($c0['id']) . '&accesskey=' . rawurlencode($c0['accesskey']) . '&fmt=lrc&charset=utf8';
+    list($dc, $db) = http_request($dUrl, 'GET', [], null, 6);
+    if ($dc !== 200 || empty($db)) return '';
+    $dj = json_decode($db, true);
+    if (!empty($dj['content'])) {
+        return (string)base64_decode($dj['content']);
+    }
+    return '';
 }
 
 /* ---------------------------------------------------------
@@ -641,6 +721,140 @@ function userlist_netease($uid)
         }
     }
     return ['code' => -1, 'playlist' => []];
+}
+
+function playlist_qq($id)
+{
+    $id = trim((string)$id);
+    if (preg_match('/(?:playlist\/|id=|disstid=)(\d+)/i', $id, $m)) {
+        $id = $m[1];
+    } elseif (preg_match('/^qq_(\d+)$/i', $id, $m)) {
+        $id = $m[1];
+    }
+
+    if (!preg_match('/^\d+$/', $id)) {
+        return ['code' => 400, 'playlist' => null];
+    }
+
+    $url = 'https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg?type=1&json=1&utf8=1&onlysong=0&disstid='
+         . rawurlencode($id) . '&format=json&inCharset=utf8&outCharset=utf8';
+    list($c, $b) = http_request($url, 'GET', ['Referer' => 'https://y.qq.com/'], null, 10);
+    if ($c !== 200 || empty($b)) {
+        return ['code' => 500, 'playlist' => null];
+    }
+
+    $j = json_decode($b, true);
+    if (!isset($j['cdlist'][0])) {
+        return ['code' => 404, 'playlist' => null];
+    }
+    $cd = $j['cdlist'][0];
+    $songlist = isset($cd['songlist']) && is_array($cd['songlist']) ? $cd['songlist'] : [];
+
+    $normTracks = [];
+    foreach ($songlist as $row) {
+        $mid = isset($row['songmid']) ? (string)$row['songmid'] : '';
+        if ($mid === '') continue;
+        $ar = [];
+        foreach ((array)(isset($row['singer']) ? $row['singer'] : []) as $s) {
+            $ar[] = [
+                'id'   => isset($s['mid']) ? $s['mid'] : 0,
+                'name' => isset($s['name']) ? clean_str($s['name']) : '未知歌手',
+            ];
+        }
+        if (empty($ar)) {
+            $ar[] = ['id' => 0, 'name' => '未知歌手'];
+        }
+        $albummid = isset($row['albummid']) ? (string)$row['albummid'] : '';
+        $picUrl = $albummid !== '' ? 'https://y.qq.com/music/photo_new/T002R300x300M000' . $albummid . '.jpg' : '';
+
+        $normTracks[] = [
+            'id'       => $mid,
+            'name'     => clean_str(isset($row['songname']) ? $row['songname'] : ''),
+            'ar'       => $ar,
+            'al'       => [
+                'id'     => $albummid,
+                'name'   => clean_str(isset($row['albumname']) ? $row['albumname'] : ''),
+                'picUrl' => $picUrl,
+            ],
+            'source'   => 'qq',
+            'url_id'   => $mid,
+            'lyric_id' => $mid,
+        ];
+    }
+
+    return [
+        'code' => 200,
+        'playlist' => [
+            'id'          => $id,
+            'name'        => clean_str(isset($cd['dissname']) ? $cd['dissname'] : 'QQ音乐歌单'),
+            'coverImgUrl' => isset($cd['logo']) ? $cd['logo'] : '',
+            'creator'     => [
+                'nickname'  => isset($cd['nickname']) ? clean_str($cd['nickname']) : 'QQ音乐用户',
+                'avatarUrl' => isset($cd['headurl']) ? $cd['headurl'] : '',
+            ],
+            'tracks'      => $normTracks,
+        ]
+    ];
+}
+
+function playlist_kugou($id)
+{
+    $id = trim((string)$id);
+    if (preg_match('/(?:songlist\/|specialid=|index\/)(\d+)/i', $id, $m)) {
+        $id = $m[1];
+    } elseif (preg_match('/^kg_(\d+)$/i', $id, $m)) {
+        $id = $m[1];
+    }
+
+    if (!preg_match('/^\d+$/', $id)) {
+        return ['code' => 400, 'playlist' => null];
+    }
+
+    $url = 'http://mobilecdn.kugou.com/api/v3/special/song?specialid=' . rawurlencode($id) . '&page=1&pagesize=100&format=json';
+    list($c, $b) = http_request($url, 'GET', ['Referer' => 'https://www.kugou.com/'], null, 10);
+    if ($c !== 200 || empty($b)) {
+        return ['code' => 500, 'playlist' => null];
+    }
+
+    $j = json_decode($b, true);
+    $list = isset($j['data']['info']) && is_array($j['data']['info']) ? $j['data']['info'] : [];
+    if (empty($list)) {
+        return ['code' => 404, 'playlist' => null];
+    }
+
+    $normTracks = [];
+    foreach ($list as $row) {
+        $hash = isset($row['hash']) ? (string)$row['hash'] : '';
+        if ($hash === '') continue;
+        $singer = isset($row['singername']) ? clean_str($row['singername']) : '未知歌手';
+        $normTracks[] = [
+            'id'       => $hash,
+            'name'     => clean_str(isset($row['songname']) ? $row['songname'] : ''),
+            'ar'       => [['id' => 0, 'name' => $singer]],
+            'al'       => [
+                'id'     => isset($row['album_id']) ? $row['album_id'] : 0,
+                'name'   => clean_str(isset($row['album_name']) ? $row['album_name'] : ''),
+                'picUrl' => '',
+            ],
+            'source'   => 'kugou',
+            'url_id'   => $hash,
+            'lyric_id' => $hash,
+        ];
+    }
+
+    return [
+        'code' => 200,
+        'playlist' => [
+            'id'          => $id,
+            'name'        => clean_str(isset($j['data']['specialname']) ? $j['data']['specialname'] : '酷狗音乐歌单'),
+            'coverImgUrl' => '',
+            'creator'     => [
+                'nickname'  => clean_str(isset($j['data']['nickname']) ? $j['data']['nickname'] : '酷狗音乐用户'),
+                'avatarUrl' => '',
+            ],
+            'tracks'      => $normTracks,
+        ]
+    ];
 }
 
 /* ---------------------------------------------------------
@@ -1283,15 +1497,36 @@ switch ($type) {
                 $res = search_netease($kw, $page, $count);
                 if (empty($res)) $res = search_kuwo($kw, $page, $count);
                 break;
-            default:
+            case 'kugou':
+                $res = search_kugou($kw, $page, $count);
+                if (empty($res)) $res = search_kuwo($kw, $page, $count);
+                break;
+            case 'kuwo':
                 $res = search_kuwo($kw, $page, $count);
                 if (empty($res)) $res = search_netease($kw, $page, $count);
+                break;
+            case 'all':
+            default:
+                $res = search_all($kw, $page, $count);
                 break;
         }
         out_json($res);
 
     case 'playlist':
-        $res = playlist_netease($id);
+        $reqSrc = isset($_REQUEST['source']) ? trim($_REQUEST['source']) : '';
+        if ($reqSrc === 'qq' || stripos($id, 'qq') !== false || stripos($id, 'y.qq.com') !== false) {
+            $res = playlist_qq($id);
+        } elseif ($reqSrc === 'kugou' || stripos($id, 'kugou') !== false) {
+            $res = playlist_kugou($id);
+        } else {
+            $res = playlist_netease($id);
+            if (($res['code'] !== 200 || empty($res['playlist']['tracks'])) && preg_match('/^\d+$/', $id)) {
+                $qqRes = playlist_qq($id);
+                if ($qqRes['code'] === 200 && !empty($qqRes['playlist']['tracks'])) {
+                    $res = $qqRes;
+                }
+            }
+        }
         out_json($res);
 
     case 'userlist':
@@ -1320,6 +1555,12 @@ switch ($type) {
         switch ($source) {
             case 'netease':
                 $l = lyric_netease($id);
+                break;
+            case 'qq':
+                $l = lyric_qq($id);
+                break;
+            case 'kugou':
+                $l = lyric_kugou($id);
                 break;
             default:
                 $l = lyric_kuwo($id);
