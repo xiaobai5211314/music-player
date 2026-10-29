@@ -476,10 +476,10 @@
     // 1. 挂钩取音频直链
     window.__sh_orig_ajaxUrl = window.ajaxUrl;
     window.ajaxUrl = function (music, callback) {
-      if (music.url !== null && music.url !== 'err' && music.url !== '') {
+      if (music.url && music.url !== 'err') {
         return window.__sh_orig_ajaxUrl(music, callback);
       }
-      if (music.id === null) {
+      if (!music.id) {
         return window.__sh_orig_ajaxUrl(music, callback);
       }
 
@@ -497,7 +497,7 @@
     if (typeof window.ajaxPic === 'function') {
       window.__sh_orig_ajaxPic = window.ajaxPic;
       window.ajaxPic = function (music, callback) {
-        if (music.pic !== null && music.pic !== 'err' && music.pic !== '') {
+        if (music.pic && music.pic !== 'err') {
           return window.__sh_orig_ajaxPic(music, callback);
         }
         resolvePic(music).then(function (u) {

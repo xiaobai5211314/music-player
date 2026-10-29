@@ -323,7 +323,7 @@ function playList(id) {
     var curSeq = rem.playSeq;
     
     // 如果链接为空，则 ajax 获取数据后再播放
-    if(targetMusic.url === null || targetMusic.url === "") {
+    if(!targetMusic.url || targetMusic.url === "err") {
         ajaxUrl(targetMusic, function(m) {
             if(curSeq !== rem.playSeq) return; // 已经切换为其他歌曲，丢弃过时回调
             play(m);
@@ -362,7 +362,7 @@ function play(music) {
     }
     
     // 遇到错误播放下一首歌
-    if(music.url == "err") {
+    if(!music.url || music.url === "err") {
         audioErr(); // 调用错误处理函数
         return false;
     }

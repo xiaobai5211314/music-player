@@ -814,15 +814,16 @@ function urlEncode(String) {
 // 参数：要进行更新的音乐
 function updateMinfo(music) {
     // 不含有 id 的歌曲无法更新
-    if(!music.id) return false;
+    if(!music || !music.id) return false;
     
     // 循环查找播放列表并更新信息
     for(var i=0; i<musicList.length; i++) {
+        if(!musicList[i] || !musicList[i].item) continue;
         for(var j=0; j<musicList[i].item.length; j++) {
             // ID 对上了，那就更新信息
-            if(musicList[i].item[j].id == music.id && musicList[i].item[j].source == music.source) {
-                musicList[i].item[j] == music;  // 更新音乐信息
-                j = musicList[i].item.length;   // 一个列表中只找一首，找到了就跳出
+            if(musicList[i].item[j] && musicList[i].item[j].id == music.id && musicList[i].item[j].source == music.source) {
+                musicList[i].item[j] = music;  // 更新音乐信息
+                break;
             }
         }
     }

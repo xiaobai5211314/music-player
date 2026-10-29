@@ -122,12 +122,12 @@ function ajaxSearch() {
 function ajaxUrl(music, callback)
 {
     // 已经有数据，直接回调
-    if(music.url !== null && music.url !== "err" && music.url !== "") {
+    if(music.url && music.url !== "err") {
         callback(music);
         return true;
     }
     // id为空，赋值链接错误。直接回调
-    if(music.id === null) {
+    if(!music.id) {
         music.url = "err";
         updateMinfo(music); // 更新音乐信息
         callback(music);
@@ -183,12 +183,12 @@ function ajaxUrl(music, callback)
 function ajaxPic(music, callback)
 {
     // 已经有数据，直接回调
-    if(music.pic !== null && music.pic !== "err" && music.pic !== "") {
+    if(music.pic && music.pic !== "err") {
         callback(music);
         return true;
     }
     // pic_id 为空，赋值链接错误。直接回调
-    if(music.pic_id === null) {
+    if(!music.pic_id) {
         music.pic = "err";
         updateMinfo(music); // 更新音乐信息
         callback(music);

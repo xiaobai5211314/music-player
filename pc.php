@@ -85,7 +85,7 @@ body{
     <link rel="stylesheet" href="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.css" id="layuicss-skinlayercss">
 
     <!-- Anthropic Claude 沉静典雅设计系统与网易云功能扩展样式 -->
-    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.4.2">
+    <link rel="stylesheet" type="text/css" href="css/claude-player.css?v=2.4.3">
 </head>
 <body>
 <!-- 顶部现代化一体化导航与云端账户控制台 (Claude Code 风格) -->
@@ -244,10 +244,10 @@ body{
 <script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
 
 <!-- 播放器数据加载模块 -->
-<script src="js/ajax.v2.js?v=2.4.2"></script>
+<script src="js/ajax.v2.js?v=2.4.3"></script>
 
 <!-- 音源后端中心：切换 / 添加接口（链接或导入 .js 文件） -->
-<script src="js/sourcehub.v2.js?v=2.4.2"></script>
+<script src="js/sourcehub.v2.js?v=2.4.3"></script>
 
 <!-- 播放器歌词解析模块 -->
 <script src="js/lyric.js"></script>
@@ -256,13 +256,13 @@ body{
 <script src="js/musicList.js"></script>
 
 <!-- 封装函数及ui交互模块 -->
-<script src="js/functions.v2.js?v=2.4.2"></script>
+<script src="js/functions.v2.js?v=2.4.3"></script>
 
 <!-- 播放器主体功能模块 -->
-<script src="js/player.v2.js?v=2.4.2"></script>
+<script src="js/player.v2.js?v=2.4.3"></script>
 
 <!-- 网易云账号与 SQLite 云端数据持久化模块 -->
-<script src="js/cloud-vault.js?v=2.4.2"></script>
+<script src="js/cloud-vault.js?v=2.4.3"></script>
 
 <!-- 滚动条美化插件 (又拍云 CDN 高速加速) -->
 <script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/jquery.mCustomScrollbar.concat.min.js"></script>
