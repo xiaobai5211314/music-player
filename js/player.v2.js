@@ -375,11 +375,9 @@ function play(music) {
     
     try {
         rem.audio[0].pause();
+        rem.audio[0].src = ''; // 彻底切断上一首流连接，释放 TCP 套接字
         try { rem.audio[0].currentTime = 0; } catch(err){}
-        rem.audio.attr('src', music.url);
-        if(rem.audio[0].load) {
-            rem.audio[0].load();
-        }
+        rem.audio[0].src = music.url;
         if(rem.speed && rem.audio[0]) {
             rem.audio[0].playbackRate = rem.speed;
         }

@@ -227,8 +227,13 @@ function handle_stream()
         exit('Private host forbidden');
     }
 
+    header('X-Accel-Buffering: no');
     header('Cache-Control: public, max-age=86400');
     header('Access-Control-Allow-Origin: *');
+
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
 
     $headers = [];
     if (isset($_SERVER['HTTP_RANGE'])) {
