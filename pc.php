@@ -244,10 +244,10 @@ body{
 <script src="https://guzhicdn.21212121.xyz/asite/assets/vendor/music/layer.js"></script>
 
 <!-- 播放器数据加载模块 -->
-<script src="js/ajax.v2.js?v=2.4.0"></script>
+<script src="js/ajax.v2.js?v=2.4.1"></script>
 
 <!-- 音源后端中心：切换 / 添加接口（链接或导入 .js 文件） -->
-<script src="js/sourcehub.v2.js?v=2.4.0"></script>
+<script src="js/sourcehub.v2.js?v=2.4.1"></script>
 
 <!-- 播放器歌词解析模块 -->
 <script src="js/lyric.js"></script>

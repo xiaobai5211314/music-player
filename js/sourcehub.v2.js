@@ -70,7 +70,13 @@
       var d = JSON.parse(raw);
       if (d) {
         if (d.searchId) state.searchId = d.searchId;
-        if (d.urlId) state.urlId = d.urlId;
+        if (d.urlId) {
+          if (typeof d.urlId === 'string' && d.urlId.indexOf('preset_') === 0) {
+            state.urlId = 'builtin';
+          } else {
+            state.urlId = d.urlId;
+          }
+        }
         if (Array.isArray(d.customBackends)) {
           d.customBackends.forEach(function (cb) {
             if (cb.kind === 'lx' && cb.code) {
@@ -102,7 +108,7 @@
      内置官方与预置音源定义
      ========================================================== */
   var BUILTIN_BACKENDS = [
-    { id: 'builtin', name: '官方直连聚合 (酷我/QQ/网易)', kind: 'builtin', builtin: true }
+    { id: 'builtin', name: '官方 VIP 高速聚合直连 (网易云VIP/酷我/QQ)', kind: 'builtin', builtin: true }
   ];
 
   function allBackends() {
@@ -455,7 +461,11 @@
           loadPromises.push(p);
         });
 
-        return Promise.all(loadPromises);
+        return Promise.all(loadPromises).then(function () {
+          if (!findBackend(state.urlId)) {
+            state.urlId = 'builtin';
+          }
+        });
       }).catch(function (err) {
         console.warn('[SourceHub] 检查预置音源清单失败:', err);
       });
