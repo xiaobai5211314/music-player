@@ -227,13 +227,16 @@ function handle_stream()
         exit('Private host forbidden');
     }
 
-    header('X-Accel-Buffering: no');
-    header('Cache-Control: public, max-age=86400');
-    header('Access-Control-Allow-Origin: *');
-
+    @ini_set('output_buffering', 'off');
+    @ini_set('zlib.output_compression', '0');
+    @ob_implicit_flush(true);
     while (ob_get_level() > 0) {
         @ob_end_clean();
     }
+
+    header('X-Accel-Buffering: no');
+    header('Cache-Control: public, max-age=86400');
+    header('Access-Control-Allow-Origin: *');
 
     $headers = [];
     if (isset($_SERVER['HTTP_RANGE'])) {
@@ -253,7 +256,6 @@ function handle_stream()
     $ch = curl_init();
     $curlOpts = [
         CURLOPT_URL            => $url,
-        CURLOPT_RETURNTRANSFER => false, // 直冲 php://output
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS      => 5,
         CURLOPT_TIMEOUT        => 300,
@@ -262,6 +264,16 @@ function handle_stream()
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_REFERER        => $ref,
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        CURLOPT_BUFFERSIZE     => 32768,
+        CURLOPT_WRITEFUNCTION  => function ($curl, $data) {
+            if (connection_aborted()) {
+                return -1; // 客户端切换歌曲断开连接时立即释放 cURL
+            }
+            echo $data;
+            if (ob_get_level() > 0) @ob_flush();
+            @flush();
+            return strlen($data);
+        },
         CURLOPT_HEADERFUNCTION => function ($curl, $headerLine) {
             $h = trim($headerLine);
             if (preg_match('#^HTTP/\S+\s+(\d{3})#i', $h, $m)) {
@@ -716,6 +728,15 @@ function playlist_netease($id)
     if ($c === 200 && !empty($b)) {
         $j = json_decode($b, true);
         if (isset($j['playlist']['tracks']) && is_array($j['playlist']['tracks'])) {
+            if (!empty($j['playlist']['coverImgUrl'])) {
+                $j['playlist']['coverImgUrl'] = preg_replace('#^http://#i', 'https://', $j['playlist']['coverImgUrl']);
+            }
+            foreach ($j['playlist']['tracks'] as &$trk) {
+                if (!empty($trk['al']['picUrl'])) {
+                    $trk['al']['picUrl'] = preg_replace('#^http://#i', 'https://', $trk['al']['picUrl']);
+                }
+            }
+            unset($trk);
             return $j;
         }
     }

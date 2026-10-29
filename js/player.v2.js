@@ -33,8 +33,9 @@ var rem = [];
 
 // 音频错误处理函数
 function audioErr() {
-    // 没播放过，直接跳过
+    // 没播放过或音频源为空正在重置，直接跳过
     if(rem.playlist === undefined) return true;
+    if(!rem.audio || !rem.audio[0] || !rem.audio[0].src || rem.audio[0].src === '' || rem.audio[0].src === window.location.href) return true;
     
     // ⚡ 核心智能容灾：若当前音频直连遇到阻断且未走中继代理，自动无缝切换为同源高可用流并重试，杜绝跳歌
     if (rem.audio && rem.audio[0] && rem.playid !== undefined && musicList[1] && musicList[1].item && musicList[1].item[rem.playid]) {
@@ -302,13 +303,16 @@ function playList(id) {
     rem.playid = id;
     var targetMusic = musicList[1].item[id];
     
-    // ⚡ 1. 瞬时响应：清除等待中的预取计时器并立刻停掉上一首残留音频
+    // ⚡ 1. 瞬时响应：清除等待中的预取计时器并立刻切断旧流连接释放连接池
     if(rem.prefetchTimer) {
         clearTimeout(rem.prefetchTimer);
         rem.prefetchTimer = null;
     }
     if(rem.audio && rem.audio[0]) {
-        try { rem.audio[0].pause(); } catch(e){}
+        try {
+            rem.audio[0].pause();
+            rem.audio[0].src = '';
+        } catch(e){}
     }
     
     // ⚡ 2. 界面瞬间刷新：高亮位置、底栏歌曲名、封面、进度归零，点一下秒响应！

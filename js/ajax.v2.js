@@ -266,7 +266,7 @@ function ajaxPlayList(lid, id, callback) {
             };
             
             if(tempList.cover !== '') {
-                tempList.cover = tempList.cover + "?param=200y200";
+                tempList.cover = tempList.cover.replace(/^http:\/\//i, 'https://') + "?param=200y200";
             } else {
                 tempList.cover = (musicList[id] && musicList[id].cover) ? musicList[id].cover : "images/player_cover.png";
             }
@@ -277,6 +277,9 @@ function ajaxPlayList(lid, id, callback) {
                 var artName = (t.ar && t.ar[0] && t.ar[0].name) ? t.ar[0].name : ((t.artists && t.artists[0] && t.artists[0].name) ? t.artists[0].name : "未知歌手");
                 var albName = (t.al && t.al.name) ? t.al.name : ((t.album && t.album.name) ? t.album.name : "未知专辑");
                 var picUrl = (t.al && t.al.picUrl) ? t.al.picUrl : ((t.album && t.album.picUrl) ? t.album.picUrl : "");
+                if(picUrl && typeof picUrl === 'string') {
+                    picUrl = picUrl.replace(/^http:\/\//i, 'https://');
+                }
                 tempList.item[i] =  {
                     id: t.id,  // 音乐ID
                     name: t.name || "未知歌曲",  // 音乐名字

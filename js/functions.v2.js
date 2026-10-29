@@ -617,6 +617,9 @@ function ajaxShare(music) {
 // 新的图像地址
 function changeCover(music) {
     var img = music.pic;    // 获取歌曲封面
+    if(img && typeof img === 'string') {
+        img = img.replace(/^http:\/\//i, 'https://');
+    }
     var animate = false,imgload = false;
     
     if(!img) {  // 封面为空
@@ -696,7 +699,9 @@ function loadList(list) {
         // 逐项添加数据
         for(var i=0; i<musicList[list].item.length; i++) {
             var tmpMusic = musicList[list].item[i];
-            
+            if(tmpMusic && tmpMusic.pic && typeof tmpMusic.pic === 'string') {
+                tmpMusic.pic = tmpMusic.pic.replace(/^http:\/\//i, 'https://');
+            }
             addItem(i + 1, tmpMusic.name, tmpMusic.artist, tmpMusic.album);
             
             // 音乐链接均有有效期限制,重新显示列表时清空处理
@@ -815,6 +820,9 @@ function urlEncode(String) {
 function updateMinfo(music) {
     // 不含有 id 的歌曲无法更新
     if(!music || !music.id) return false;
+    if(music.pic && typeof music.pic === 'string') {
+        music.pic = music.pic.replace(/^http:\/\//i, 'https://');
+    }
     
     // 循环查找播放列表并更新信息
     for(var i=0; i<musicList.length; i++) {
