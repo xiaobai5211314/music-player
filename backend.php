@@ -41,12 +41,15 @@ if ($CALLBACK !== '' && !preg_match('/^[A-Za-z_$][A-Za-z0-9_$.]*$/', $CALLBACK))
 function out_json($data)
 {
     global $CALLBACK;
+    $raw = json_encode($data, JSON_UNESCAPED_UNICODE);
+    // 全面升级网易云旧 CDN 图床与资源链接为 HTTPS，彻底杜绝 Chrome 产生海量 Mixed Content 警告与连接重置
+    $raw = preg_replace('#http://(p[1-4]|m[7-8]c?)\.music\.126\.net#i', 'https://$1.music.126.net', $raw);
     if ($CALLBACK !== '') {
         header('Content-Type: application/javascript; charset=utf-8');
-        echo $CALLBACK . '(' . json_encode($data, JSON_UNESCAPED_UNICODE) . ');';
+        echo $CALLBACK . '(' . $raw . ');';
     } else {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        echo $raw;
     }
     exit();
 }

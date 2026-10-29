@@ -375,15 +375,27 @@
     return tryPlatformAlias();
   }
 
-  function fallbackBuiltinUrl(music) {
+  function fallbackBuiltinUrl(music, retryCount) {
+    retryCount = retryCount || 0;
     return fetch('backend.php?types=url&id=' + encodeURIComponent(music.id) +
                  '&source=' + encodeURIComponent(music.source) +
                  '&_t=' + Date.now())
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(function (j) {
         var u = (j && j.url) || '';
         return ensureSecureStream(u);
       }).catch(function () {
+        // 网络抖动/网卡切换(ERR_NETWORK_CHANGED)时自动平滑重试 1 次
+        if (retryCount < 1) {
+          return new Promise(function (resolve) {
+            setTimeout(function () {
+              resolve(fallbackBuiltinUrl(music, retryCount + 1));
+            }, 300);
+          });
+        }
         return '';
       });
   }
