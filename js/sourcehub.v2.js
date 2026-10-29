@@ -279,41 +279,55 @@
   function resolveUrl(music, quality) {
     quality = quality || '128k';
 
-    // 候选音源链
-    var candidates = [];
-
-    // 1. 首选音源
-    var primary = findBackend(state.urlId);
-    if (primary && primary.kind === 'lx' && primary.session) {
-      candidates.push(primary);
-    }
-
-    // 2. 备选已加载的洛雪音源
-    state.backends.forEach(function (b) {
-      if (b.kind === 'lx' && b.session && candidates.indexOf(b) === -1) {
-        candidates.push(b);
-      }
-    });
-
-    var idx = 0;
-    function tryNextSource() {
-      if (idx >= candidates.length) {
-        // 所有洛雪音源尝试完毕，回退到官方直连
-        return fallbackBuiltinUrl(music);
-      }
-      var cur = candidates[idx++];
-      return resolveViaLx(cur, music, quality).then(function (u) {
+    // ⚡ 网易云与官方优先通道：网易云或官方模式下，直接优先调用后端原生/VIP通道，实现毫秒级秒播
+    if (music.source === 'netease' || state.urlId === 'builtin') {
+      return fallbackBuiltinUrl(music).then(function (u) {
         if (u && /^https?:\/\//i.test(u)) {
-          return ensureSecureStream(u);
+          return u;
         }
-        return tryNextSource();
-      }).catch(function (err) {
-        console.warn('[SourceHub] 音源 [' + cur.name + '] 解析失败，自动切换备选音源:', err && err.message);
-        return tryNextSource();
+        return tryLxCandidates();
       });
     }
 
-    return tryNextSource();
+    return tryLxCandidates();
+
+    function tryLxCandidates() {
+      // 候选音源链
+      var candidates = [];
+
+      // 1. 首选音源
+      var primary = findBackend(state.urlId);
+      if (primary && primary.kind === 'lx' && primary.session) {
+        candidates.push(primary);
+      }
+
+      // 2. 备选已加载的洛雪音源
+      state.backends.forEach(function (b) {
+        if (b.kind === 'lx' && b.session && candidates.indexOf(b) === -1) {
+          candidates.push(b);
+        }
+      });
+
+      var idx = 0;
+      function tryNextSource() {
+        if (idx >= candidates.length) {
+          // 所有洛雪音源尝试完毕，回退到官方直连
+          return fallbackBuiltinUrl(music);
+        }
+        var cur = candidates[idx++];
+        return resolveViaLx(cur, music, quality).then(function (u) {
+          if (u && /^https?:\/\//i.test(u)) {
+            return ensureSecureStream(u);
+          }
+          return tryNextSource();
+        }).catch(function (err) {
+          console.warn('[SourceHub] 音源 [' + cur.name + '] 解析失败，自动切换备选音源:', err && err.message);
+          return tryNextSource();
+        });
+      }
+
+      return tryNextSource();
+    }
   }
 
   function resolveViaLx(backend, music, quality) {

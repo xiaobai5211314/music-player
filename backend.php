@@ -572,7 +572,47 @@ function url_netease($id)
 {
     $id = trim((string)$id);
     if ($id === '') return '';
-    return 'https://music.163.com/song/media/outer/url?id=' . $id . '.mp3';
+
+    // 1. 读取本地 VIP 配置（若配置了会员 Cookie，享有高品质/无损与 VIP 完整播放权）
+    $vipCookie = '';
+    $configFile = __DIR__ . '/data/vip_config.json';
+    if (file_exists($configFile)) {
+        $cfg = @json_decode(file_get_contents($configFile), true);
+        if (!empty($cfg['netease_cookie'])) {
+            $vipCookie = trim((string)$cfg['netease_cookie']);
+        }
+    }
+
+    $cookieHeader = 'os=pc; osver=Microsoft-Windows-10-Professional-build-19042-64bit; appver=2.9.7.199837; channel=netease;';
+    if (!empty($vipCookie)) {
+        if (strpos($vipCookie, 'MUSIC_U=') === false) {
+            $cookieHeader .= ' MUSIC_U=' . $vipCookie . ';';
+        } else {
+            $cookieHeader .= ' ' . $vipCookie . ';';
+        }
+    }
+
+    // 2. 调用网易云官方高可用解析接口（优先下发 320k 高品质 MP3 直链）
+    $url = 'https://music.163.com/api/song/enhance/player/url/v1?ids=[' . rawurlencode($id) . ']&level=exhigh&encodeType=mp3';
+    $headers = [
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer'    => 'https://music.163.com/',
+        'Cookie'     => $cookieHeader
+    ];
+    list($code, $body) = http_request($url, 'GET', $headers, null, 8);
+    if ($code === 200 && !empty($body)) {
+        $json = @json_decode($body, true);
+        if (!empty($json['data'][0]['url'])) {
+            $playUrl = (string)$json['data'][0]['url'];
+            // 自动提升为 HTTPS，杜绝浏览器 Mixed Content 混合内容拦截
+            if (strpos($playUrl, 'http://') === 0) {
+                $playUrl = 'https://' . substr($playUrl, 7);
+            }
+            return $playUrl;
+        }
+    }
+
+    return '';
 }
 
 function lyric_netease($id)
