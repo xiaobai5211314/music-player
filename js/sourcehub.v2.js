@@ -38,7 +38,7 @@
   var state = {
     backends: [],
     searchId: 'builtin',
-    urlId: 'preset_全豆要[聚合音源]'
+    urlId: 'builtin'
   };
 
   var sessions = {};
@@ -279,17 +279,15 @@
   function resolveUrl(music, quality) {
     quality = quality || '128k';
 
-    // ⚡ 网易云与官方优先通道：网易云或官方模式下，直接优先调用后端原生/VIP通道，实现毫秒级秒播
-    if (music.source === 'netease' || state.urlId === 'builtin') {
-      return fallbackBuiltinUrl(music).then(function (u) {
-        if (u && /^https?:\/\//i.test(u)) {
-          return u;
-        }
-        return tryLxCandidates();
-      });
-    }
-
-    return tryLxCandidates();
+    // ⚡ 官方/VIP 高速通道优先：秒出直链，杜绝死源超时卡顿
+    return fallbackBuiltinUrl(music).then(function (u) {
+      if (u && /^https?:\/\//i.test(u)) {
+        return u;
+      }
+      return tryLxCandidates();
+    }).catch(function () {
+      return tryLxCandidates();
+    });
 
     function tryLxCandidates() {
       // 候选音源链
@@ -447,7 +445,7 @@
                 sources: Object.keys((s.inited && s.inited.sources) || {})
               };
               state.backends.push(b);
-              if (meta.default && (state.urlId === 'builtin' || state.urlId === 'preset_quandouyao' || !findBackend(state.urlId))) {
+              if (meta.default && !findBackend(state.urlId)) {
                 state.urlId = sid;
               }
               console.log('[SourceHub] 预置音源加载成功:', meta.name);
