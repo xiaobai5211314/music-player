@@ -302,7 +302,11 @@ function playList(id) {
     rem.playid = id;
     var targetMusic = musicList[1].item[id];
     
-    // ⚡ 1. 瞬时响应：立刻停掉上一首残留音频，不拖泥带水
+    // ⚡ 1. 瞬时响应：清除等待中的预取计时器并立刻停掉上一首残留音频
+    if(rem.prefetchTimer) {
+        clearTimeout(rem.prefetchTimer);
+        rem.prefetchTimer = null;
+    }
     if(rem.audio && rem.audio[0]) {
         try { rem.audio[0].pause(); } catch(e){}
     }

@@ -485,7 +485,8 @@
   function hookPlayer() {
     if (typeof window.ajaxUrl !== 'function') return false;
 
-    // 1. 挂钩取音频直链
+    // 1. 挂钩取音频直链并进行单飞去重 (In-flight Promise Dedup)，消除预取与即时点播竞争
+    var pendingUrlPromises = {};
     window.__sh_orig_ajaxUrl = window.ajaxUrl;
     window.ajaxUrl = function (music, callback) {
       if (music.url && music.url !== 'err') {
@@ -495,12 +496,27 @@
         return window.__sh_orig_ajaxUrl(music, callback);
       }
 
-      resolveUrl(music).then(function (u) {
-        music.url = u || 'err';
-        if (window.updateMinfo) window.updateMinfo(music);
-        callback(music);
-      }).catch(function () {
-        return window.__sh_orig_ajaxUrl(music, callback);
+      var pKey = (music.source || 'default') + '_' + music.id;
+      if (!pendingUrlPromises[pKey]) {
+        pendingUrlPromises[pKey] = resolveUrl(music).then(function (u) {
+          delete pendingUrlPromises[pKey];
+          music.url = u || 'err';
+          if (window.updateMinfo) window.updateMinfo(music);
+          return music;
+        }).catch(function () {
+          delete pendingUrlPromises[pKey];
+          return new Promise(function(resolve) {
+            window.__sh_orig_ajaxUrl(music, function(resM) {
+              resolve(resM);
+            });
+          });
+        });
+      }
+
+      pendingUrlPromises[pKey].then(function (resM) {
+        if (typeof callback === 'function') {
+          callback(resM);
+        }
       });
       return true;
     };
