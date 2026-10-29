@@ -158,7 +158,11 @@ function ajaxUrl(music, callback)
             if(jsonData.url === "") {
                 music.url = "err";
             } else {
-                music.url = jsonData.url;    // 记录结果
+                var finalUrl = jsonData.url;
+                if(finalUrl.indexOf('types=stream') === -1 && /^https?:\/\//i.test(finalUrl)) {
+                    finalUrl = 'backend.php?types=stream&url=' + encodeURIComponent(finalUrl);
+                }
+                music.url = finalUrl;
             }
             
             updateMinfo(music); // 更新音乐信息

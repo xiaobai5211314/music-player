@@ -78,8 +78,8 @@ $(function(){
     // 列表项单击秒播 (全端统一：PC 与移动端均支持单击即播)
     $(".music-list").on("click", ".list-item", function(e) {
         if ($(this).hasClass("list-head") || $(this).hasClass("list-loadmore") || $(this).attr("id") === "list-foot") return;
-        // 如果点击的是右侧下载、分享、更多等子功能图标，不触发整行播放
-        if ($(e.target).closest(".icon-download, .icon-share, .list-mobile-menu").length > 0) {
+        // 如果点击的是右侧下载、分享、播放图标等子菜单功能，不触发整行播放，防止双重触发
+        if ($(e.target).closest(".icon-download, .icon-share, .icon-play, .list-menu, .list-mobile-menu").length > 0) {
             return;
         }
         var num = parseInt($(this).data("no"));
@@ -123,7 +123,8 @@ $(function(){
     });
     
     // 列表中的菜单点击
-    $(".music-list").on("click",".icon-play,.icon-download,.icon-share", function() {
+    $(".music-list").on("click",".icon-play,.icon-download,.icon-share", function(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
         var num = parseInt($(this).parent().data("no"));
         if(isNaN(num)) return false;
         switch($(this).data("function")) {
@@ -970,7 +971,11 @@ function initList() {
         if(i == 1) {    // 正在播放列表
             // 读取正在播放列表
             var tmp_item = playerReaddata('playing');
-            if(tmp_item) {  // 读取到了正在播放列表
+            if(tmp_item && Array.isArray(tmp_item)) {  // 读取到了正在播放列表
+                // 清理历史保存的过期/失效直链，确保每次均获取实时有效流
+                for(var k = 0; k < tmp_item.length; k++) {
+                    if (tmp_item[k]) tmp_item[k].url = null;
+                }
                 musicList[1].item = tmp_item;
                 mkPlayer.defaultlist = 1;   // 默认显示正在播放列表
             }

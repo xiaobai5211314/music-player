@@ -232,6 +232,16 @@ function handle_stream()
         $headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
     }
 
+    // 根据目标 CDN 注入权威 Referer，防止任何防盗链拦截
+    $ref = 'https://music.163.com/';
+    if (stripos($host, 'kuwo.cn') !== false) {
+        $ref = 'https://www.kuwo.cn/';
+    } elseif (stripos($host, 'qq.com') !== false) {
+        $ref = 'https://y.qq.com/';
+    } elseif (stripos($host, 'kugou.com') !== false) {
+        $ref = 'https://www.kugou.com/';
+    }
+
     $ch = curl_init();
     $curlOpts = [
         CURLOPT_URL            => $url,
@@ -242,9 +252,16 @@ function handle_stream()
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_REFERER        => $ref,
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         CURLOPT_HEADERFUNCTION => function ($curl, $headerLine) {
             $h = trim($headerLine);
+            if (preg_match('#^HTTP/\S+\s+(\d{3})#i', $h, $m)) {
+                $code = (int)$m[1];
+                if ($code === 200 || $code === 206) {
+                    http_response_code($code);
+                }
+            }
             if (stripos($h, 'Content-Type:') === 0 ||
                 stripos($h, 'Content-Length:') === 0 ||
                 stripos($h, 'Content-Range:') === 0 ||

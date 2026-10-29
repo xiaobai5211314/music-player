@@ -36,6 +36,28 @@ function audioErr() {
     // 没播放过，直接跳过
     if(rem.playlist === undefined) return true;
     
+    // ⚡ 核心智能容灾：若当前音频直连遇到阻断且未走中继代理，自动无缝切换为同源高可用流并重试，杜绝跳歌
+    if (rem.audio && rem.audio[0] && rem.playid !== undefined && musicList[1] && musicList[1].item && musicList[1].item[rem.playid]) {
+        var curMusic = musicList[1].item[rem.playid];
+        if (curMusic.url && curMusic.url !== 'err' && curMusic.url.indexOf('backend.php?types=stream') === -1 && /^https?:\/\//i.test(curMusic.url)) {
+            console.warn('[Player] 客户端直连音频受阻，无缝切换为同源流代理重试:', curMusic.name);
+            curMusic.url = 'backend.php?types=stream&url=' + encodeURIComponent(curMusic.url);
+            try {
+                rem.audio[0].pause();
+                rem.audio.attr('src', curMusic.url);
+                if (rem.audio[0].load) rem.audio[0].load();
+                var p = rem.audio[0].play();
+                if (p !== undefined) {
+                    p.catch(function(e) {
+                        if (e && e.name === 'AbortError') return;
+                        console.warn('[Player] 中继流播放异常:', e);
+                    });
+                }
+                return true;
+            } catch(e) {}
+        }
+    }
+    
     if(rem.errCount > 10) { // 连续播放失败的歌曲过多
         layer.msg('似乎出了点问题~播放已停止');
         rem.errCount = 0;

@@ -270,13 +270,9 @@
     if (!url || typeof url !== 'string') return '';
     url = url.trim();
     if (!/^https?:\/\//i.test(url)) return url;
-
-    // 若当前页面是 HTTPS，而直链是 HTTP
-    if (window.location.protocol === 'https:' && url.indexOf('http://') === 0) {
-      // 避免某些无法 HTTPS 加载的 IP 或域名被浏览器直接阻断
-      return 'backend.php?types=stream&url=' + encodeURIComponent(url);
-    }
-    return url;
+    // 统一走同源流代理，彻底根除 Chrome 跨域/防盗链/代理 Fake-IP 导致的媒体源中断
+    if (url.indexOf('backend.php?types=stream') !== -1) return url;
+    return 'backend.php?types=stream&url=' + encodeURIComponent(url);
   }
 
   /* ==========================================================
