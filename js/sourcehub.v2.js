@@ -663,7 +663,7 @@
     m.innerHTML =
       '<button class="close-btn" id="sh-x">✕</button>' +
       '<h3>⚡ 音源后端引擎 (SourceHub 2.0)</h3>' +
-      '<p class="sub">已自动挂载 20+ 洛雪音频解析源，具备自动容灾、HTTPS 混合内容防拦截与跨域代理能力。</p>' +
+      '<p class="sub">已内置多个实测可用的洛雪音频解析源，具备自动容灾、HTTPS 混合内容防拦截与跨域代理能力。</p>' +
       '<div class="row"><label>选择默认主力音源（单源失败将自动无缝回退备用源）</label>' +
       '<ul class="list">' + rows + '</ul></div>' +
       '<div class="row">' +
