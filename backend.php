@@ -629,8 +629,8 @@ function url_netease($id)
         }
     }
 
-    // 2. 调用网易云官方高可用解析接口（优先下发 320k 高品质 MP3 直链）
-    $url = 'https://music.163.com/api/song/enhance/player/url/v1?ids=[' . rawurlencode($id) . ']&level=exhigh&encodeType=mp3';
+    // 2. 调用网易云官方高可用解析接口（会员 Cookie 下优先下发无损 FLAC 直链，无无损时自动回落高音质）
+    $url = 'https://music.163.com/api/song/enhance/player/url/v1?ids=[' . rawurlencode($id) . ']&level=lossless&encodeType=flac';
     $headers = [
         'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer'    => 'https://music.163.com/',
