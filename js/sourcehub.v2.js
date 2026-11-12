@@ -283,7 +283,9 @@
 
     // ⚡ 官方/VIP 高速通道优先：秒出直链，杜绝死源超时卡顿
     return fallbackBuiltinUrl(music).then(function (u) {
-      if (u && /^https?:\/\//i.test(u)) {
+      // fallbackBuiltinUrl 成功时返回的是流代理相对地址（backend.php?types=stream&url=…），
+      // 只要非空即代表官方 VIP 通道拿到了直链，直接采用；空串才降级到洛雪备选源
+      if (u) {
         return u;
       }
       return tryLxCandidates();

@@ -367,7 +367,7 @@ header("Expires: 0");
 <script src="js/ajax.v2.js?v=2.4.7"></script>
 
 <!-- 音源后端中心：切换 / 添加接口（链接或导入 .js 文件） -->
-<script src="js/sourcehub.v2.js?v=2.5.0"></script>
+<script src="js/sourcehub.v2.js?v=2.5.1"></script>
 
 <!-- 播放器歌词解析模块 -->
 <script src="js/lyric.js"></script>
