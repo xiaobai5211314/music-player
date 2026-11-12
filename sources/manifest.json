@@ -1,19 +1,85 @@
 {
-  "version": "2.5.0",
+  "version": "2.6.0",
   "updated": "2026-11-13",
   "defaultSource": "builtin",
   "sources": [
-    { "id": "changqing",   "name": "长青SVIP音源",   "file": "changqing.js",   "verified": true },
-    { "id": "qdy",         "name": "QDY 音源",       "file": "qdy.js",         "verified": true },
-    { "id": "jiexiang",    "name": "捷翔聚合音源",   "file": "jiexiang.js",    "verified": true },
-    { "id": "huanyin",     "name": "幻音音源",       "file": "huanyin.js",     "verified": true },
-    { "id": "ikun",        "name": "ikun 音源",      "file": "ikun.js",        "verified": true },
-    { "id": "fish",        "name": "fish_music",     "file": "fish.js",        "verified": true },
-    { "id": "xinglan",     "name": "星澜聚合音源",   "file": "xinglan.js",     "verified": true },
-    { "id": "xinghai",     "name": "星海音乐源",     "file": "xinghai.js",     "verified": true },
-    { "id": "suyin",       "name": "溯音音源",       "file": "suyin.js",       "verified": true },
-    { "id": "helloworld",  "name": "HelloWorld 音源", "file": "helloworld.js", "verified": true },
-    { "id": "feichangdao", "name": "非常刀",         "file": "feichangdao.js", "verified": true },
-    { "id": "hyw",         "name": "HYWmusic 公益版", "file": "hyw.js",        "verified": true }
+    {
+      "id": "changqing",
+      "name": "长青SVIP音源",
+      "file": "changqing.js",
+      "verified": true
+    },
+    {
+      "id": "qdy",
+      "name": "QDY 音源",
+      "file": "qdy.js",
+      "verified": true
+    },
+    {
+      "id": "jiexiang",
+      "name": "捷翔聚合音源",
+      "file": "jiexiang.js",
+      "verified": true
+    },
+    {
+      "id": "huanyin",
+      "name": "幻音音源",
+      "file": "huanyin.js",
+      "verified": true
+    },
+    {
+      "id": "huibq",
+      "name": "Huibq 音源",
+      "file": "huibq.js",
+      "verified": true
+    },
+    {
+      "id": "ikun",
+      "name": "ikun 音源",
+      "file": "ikun.js",
+      "verified": true
+    },
+    {
+      "id": "fish",
+      "name": "fish_music",
+      "file": "fish.js",
+      "verified": true
+    },
+    {
+      "id": "xinglan",
+      "name": "星澜聚合音源",
+      "file": "xinglan.js",
+      "verified": true
+    },
+    {
+      "id": "xinghai",
+      "name": "星海音乐源",
+      "file": "xinghai.js",
+      "verified": true
+    },
+    {
+      "id": "suyin",
+      "name": "溯音音源",
+      "file": "suyin.js",
+      "verified": true
+    },
+    {
+      "id": "helloworld",
+      "name": "HelloWorld 音源",
+      "file": "helloworld.js",
+      "verified": true
+    },
+    {
+      "id": "feichangdao",
+      "name": "非常刀",
+      "file": "feichangdao.js",
+      "verified": true
+    },
+    {
+      "id": "hyw",
+      "name": "HYWmusic 公益版",
+      "file": "hyw.js",
+      "verified": true
+    }
   ]
 }
