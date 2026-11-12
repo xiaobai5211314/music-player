@@ -200,11 +200,14 @@ function handle_proxy()
     }
 
     // 洛雪音源协议约定：返回原始字符串 body，由脚本决定是否 parse
+    // body_b64：字节保真通道（二进制响应/非 UTF-8 内容经 base64 传递，前端 lxutils 负责解码）
+    $isUtf8 = @preg_match('//u', $respBody) === 1;
     out_json([
-        'ok'      => true,
-        'status'  => $code,
-        'headers' => $respHeaders,
-        'body'    => $respBody
+        'ok'       => true,
+        'status'   => $code,
+        'headers'  => $respHeaders,
+        'body'     => $isUtf8 ? $respBody : '',
+        'body_b64' => base64_encode($respBody)
     ]);
 }
 

@@ -139,7 +139,9 @@
       url: url,
       method: method,
       headers: headers,
-      body: typeof body === 'object' ? JSON.stringify(body) : (body || '')
+      body: (typeof body === 'object' && !(typeof window !== 'undefined' && window.LxShimUtils && window.LxShimUtils.buffer.isBuffer(body)) && !(typeof Uint8Array !== 'undefined' && body instanceof Uint8Array)) ? JSON.stringify(body)
+          : (typeof window !== 'undefined' && window.LxShimUtils && (window.LxShimUtils.buffer.isBuffer(body) || (typeof Uint8Array !== 'undefined' && body instanceof Uint8Array))) ? window.LxShimUtils.__bytesToLatin1(body)
+          : (body || '')
     };
 
     return fetch(proxyUrl, {
@@ -152,7 +154,12 @@
       if (!j || !j.ok) {
         throw new Error((j && j.error) || '代理请求失败 (HTTP ' + (j ? j.status : 0) + ')');
       }
-      var rawBody = j.body == null ? '' : String(j.body);
+      var rawBody;
+      if (j.body_b64 != null && typeof window !== 'undefined' && window.LxShimUtils) {
+        rawBody = window.LxShimUtils.__bytesToLatin1(window.LxShimUtils.__b64ToBytes(j.body_b64));
+      } else {
+        rawBody = j.body == null ? '' : String(j.body);
+      }
       return {
         statusCode: j.status || 200,
         status: j.status || 200,
@@ -172,8 +179,11 @@
       env: 'web',
       currentScriptInfo: {
         name: (session && session.name) || 'SourceHub-Worker',
-        version: '1.0.0'
+        version: '1.0.0',
+        rawScript: (session && session.code) || ''
       },
+      utils: (typeof window !== 'undefined' && window.LxShimUtils) || null,
+      zlib: (typeof window !== 'undefined' && window.LxShimZlib) || null,
       EVENT_NAMES: {
         inited: 'inited',
         updateAlert: 'updateAlert',
