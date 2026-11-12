@@ -160,11 +160,25 @@
       } else {
         rawBody = j.body == null ? '' : String(j.body);
       }
+      // JSON 混合体：content-type 为 json 时返回「字符串对象 + 解析属性」，
+      // 同时兼容 JSON.parse(body) 与 body.code 两种脚本写法（对齐洛雪桌面端行为）
+      var ctHeader = '';
+      try { ctHeader = (j.headers && (j.headers['content-type'] || j.headers['Content-Type'])) || ''; } catch (e0) {}
+      if (/json/i.test(ctHeader)) {
+        try {
+          var __parsed = JSON.parse(rawBody);
+          if (__parsed && typeof __parsed === 'object') {
+            var __hybrid = new String(rawBody);
+            Object.assign(__hybrid, __parsed);
+            rawBody = __hybrid;
+          }
+        } catch (e1) {}
+      }
       return {
         statusCode: j.status || 200,
         status: j.status || 200,
         headers: j.headers || {},
-        body: rawBody // 必须为原始字符串，保证脚本内 JSON.parse(body) 正常工作
+        body: rawBody
       };
     }).catch(function (err) {
       console.warn('[SourceHub] 代理请求异常:', url, err);
