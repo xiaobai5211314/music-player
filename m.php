@@ -369,7 +369,7 @@ header("Expires: 0");
 <!-- 音源后端中心：切换 / 添加接口（链接或导入 .js 文件） -->
 <script src="js/vendor/aes-js.js?v=3.1.2"></script>
 <script src="js/lxutils.v1.js?v=1.0.0"></script>
-<script src="js/sourcehub.v2.js?v=2.6.1"></script>
+<script src="js/sourcehub.v2.js?v=2.6.2"></script>
 
 <!-- 播放器歌词解析模块 -->
 <script src="js/lyric.js"></script>

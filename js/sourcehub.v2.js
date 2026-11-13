@@ -621,6 +621,7 @@
     '#sh-modal .btn--sm{padding:4px 10px;font-size:11.5px}',
     '#sh-modal .list{list-style:none;margin:0 0 12px;padding:0}',
     '#sh-modal .list li{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.07)}',
+    '#sh-modal .list li input[type=radio]{width:auto;flex-shrink:0}',
     '#sh-modal .list li:last-child{border-bottom:0}',
     '#sh-modal .tag{padding:2px 7px;border-radius:999px;font-size:10.5px;background:rgba(56,189,248,.15);color:#38bdf8;border:1px solid rgba(56,189,248,.3)}',
     '#sh-modal .tag--preset{background:rgba(52,211,153,.15);color:#34d399;border-color:rgba(52,211,153,.3)}',
@@ -736,8 +737,8 @@
           (b.kind === 'lx' ? resolveViaLx(b, song, '128k') : fallbackBuiltinUrl(song))
             .then(function (u) {
               var ms = Date.now() - t0;
-              if (u && /^https?:\/\//i.test(u)) {
-                showMsg('✅ 测试通过 [' + song.label + '] (' + ms + 'ms) 直链: ' + u.slice(0, 55) + '...');
+              if (u) {
+                showMsg('✅ 测试通过 [' + song.label + '] (' + ms + 'ms) 直链: ' + String(u).slice(0, 55) + '...');
               } else {
                 runProbe();
               }
