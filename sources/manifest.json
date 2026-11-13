@@ -1,5 +1,5 @@
 {
-  "version": "2.6.0",
+  "version": "2.6.1",
   "updated": "2026-11-13",
   "defaultSource": "builtin",
   "sources": [
@@ -31,12 +31,6 @@
       "id": "huibq",
       "name": "Huibq 音源",
       "file": "huibq.js",
-      "verified": true
-    },
-    {
-      "id": "ikun",
-      "name": "ikun 音源",
-      "file": "ikun.js",
       "verified": true
     },
     {

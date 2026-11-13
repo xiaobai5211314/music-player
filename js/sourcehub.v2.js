@@ -727,10 +727,11 @@
 
         var t0 = Date.now();
         var pIdx = 0;
+        var lastErr = '';
 
         function runProbe() {
           if (pIdx >= probeSongs.length) {
-            showMsg('⚠️ 该音源在主流歌曲库中未能成功返回可用直链', true);
+            showMsg('⚠️ 该音源在主流歌曲库中未能成功返回可用直链' + (lastErr ? '（最后错误: ' + lastErr + '）' : ''), true);
             return;
           }
           var song = probeSongs[pIdx++];
@@ -742,7 +743,8 @@
               } else {
                 runProbe();
               }
-            }).catch(function () {
+            }).catch(function (err) {
+              lastErr = (err && err.message) ? err.message.slice(0, 60) : String(err || '').slice(0, 60);
               runProbe();
             });
         }
