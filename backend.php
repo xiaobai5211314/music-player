@@ -193,7 +193,7 @@ function handle_proxy()
         out_json(['ok' => false, 'error' => '目标地址不可达或属于局域网私有地址']);
     }
 
-    list($code, $respBody, $respHeaders, $err) = http_request($url, $method, $headers, $body, 20);
+    list($code, $respBody, $respHeaders, $err) = http_request($url, $method, $headers, $body, 6);
 
     if ($respBody === false) {
         out_json(['ok' => false, 'error' => '代理请求失败：' . $err, 'status' => $code]);
@@ -632,27 +632,125 @@ function url_netease($id)
         }
     }
 
-    // 2. 调用网易云官方高可用解析接口（会员 Cookie 下优先下发无损 FLAC 直链，无无损时自动回落高音质）
-    $url = 'https://music.163.com/api/song/enhance/player/url/v1?ids=[' . rawurlencode($id) . ']&level=lossless&encodeType=flac';
-    $headers = [
-        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer'    => 'https://music.163.com/',
-        'Cookie'     => $cookieHeader
-    ];
-    list($code, $body) = http_request($url, 'GET', $headers, null, 8);
-    if ($code === 200 && !empty($body)) {
-        $json = @json_decode($body, true);
-        if (!empty($json['data'][0]['url'])) {
-            $playUrl = (string)$json['data'][0]['url'];
-            // 自动提升为 HTTPS，杜绝浏览器 Mixed Content 混合内容拦截
-            if (strpos($playUrl, 'http://') === 0) {
-                $playUrl = 'https://' . substr($playUrl, 7);
+    // 2. 调用网易云官方高可用解析接口（优先下发无损 FLAC，无无损时自动回落 standard MP3）
+    $levels = ['lossless&encodeType=flac', 'standard&encodeType=mp3'];
+    foreach ($levels as $lvl) {
+        $url = 'https://music.163.com/api/song/enhance/player/url/v1?ids=[' . rawurlencode($id) . ']&level=' . $lvl;
+        list($code, $body) = http_request($url, 'GET', $headers, null, 6);
+        if ($code === 200 && !empty($body)) {
+            $json = @json_decode($body, true);
+            if (!empty($json['data'][0]['url'])) {
+                $playUrl = (string)$json['data'][0]['url'];
+                if (strpos($playUrl, 'http://') === 0) {
+                    $playUrl = 'https://' . substr($playUrl, 7);
+                }
+                return $playUrl;
             }
-            return $playUrl;
         }
     }
 
+    // 3. 官方公开外链兜底 (outer mp3 302 重定向检测，非404直接采用)
+    $outer = 'http://music.163.com/song/media/outer/url?id=' . rawurlencode($id) . '.mp3';
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL            => $outer,
+        CURLOPT_NOBODY         => true,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_TIMEOUT        => 4,
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+    ]);
+    curl_exec($ch);
+    $redir = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if (($httpCode === 302 || $httpCode === 301) && !empty($redir) && stripos($redir, '/404') === false) {
+        if (strpos($redir, 'http://') === 0) {
+            $redir = 'https://' . substr($redir, 7);
+        }
+        return $redir;
+    }
+
     return '';
+}
+
+function url_fallback_match($id, $source = 'netease', $name = '', $artist = '')
+{
+    // 若前端未传歌名，从网易云详情反查歌名与歌手
+    if (empty($name) && $source === 'netease' && !empty($id)) {
+        list($c, $b) = http_request('https://music.163.com/api/song/detail/?id=' . rawurlencode($id) . '&ids=[' . rawurlencode($id) . ']', 'GET', ['Referer' => 'https://music.163.com/'], null, 5);
+        if ($c === 200 && !empty($b)) {
+            $j = @json_decode($b, true);
+            if (!empty($j['songs'][0]['name'])) {
+                $name = $j['songs'][0]['name'];
+            }
+            if (empty($artist) && !empty($j['songs'][0]['artists'][0]['name'])) {
+                $artist = $j['songs'][0]['artists'][0]['name'];
+            }
+        }
+    }
+
+    if (empty($name)) {
+        return ['url' => '', 'source' => '', 'name' => ''];
+    }
+
+    // 净化歌名：去掉括号内的非核心修饰（如伴奏、正式版），保留核心歌名提高跨源匹配率
+    $cleanName = trim(preg_replace('/\(.*?\)|（.*?）/', '', $name));
+    if ($cleanName === '') $cleanName = $name;
+    $kw = trim($cleanName . ' ' . $artist);
+
+    // 1. 优先尝试酷我全网公开试听音源
+    $kuwoResults = search_kuwo($kw, 1, 6);
+    if (empty($kuwoResults) && $kw !== $cleanName) {
+        $kuwoResults = search_kuwo($cleanName, 1, 6);
+    }
+    foreach ($kuwoResults as $r) {
+        $rName = isset($r['name']) ? $r['name'] : '';
+        $rId = isset($r['id']) ? $r['id'] : '';
+        if (empty($rId)) continue;
+        // 过滤伴奏干扰
+        if (stripos($rName, '伴奏') !== false && stripos($name, '伴奏') === false) {
+            continue;
+        }
+        $u = url_kuwo($rId);
+        if (!empty($u)) {
+            return [
+                'url'    => $u,
+                'source' => 'kuwo',
+                'name'   => $rName,
+                'rid'    => $rId
+            ];
+        }
+    }
+
+    // 2. 备选尝试酷狗公开音源
+    $kgResults = search_kugou($kw, 1, 6);
+    foreach ($kgResults as $r) {
+        $rName = isset($r['name']) ? $r['name'] : '';
+        $hash = isset($r['id']) ? $r['id'] : '';
+        if (empty($hash)) continue;
+        if (stripos($rName, '伴奏') !== false && stripos($name, '伴奏') === false) {
+            continue;
+        }
+        $kgUrl = 'https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=' . rawurlencode($hash);
+        list($c, $b) = http_request($kgUrl, 'GET', ['Cookie' => 'kg_mid=2333'], null, 5);
+        if ($c === 200 && !empty($b)) {
+            $kgJson = @json_decode($b, true);
+            if (!empty($kgJson['url'])) {
+                $u = $kgJson['url'];
+                if (strpos($u, 'http://') === 0) {
+                    $u = 'https://' . substr($u, 7);
+                }
+                return [
+                    'url'    => $u,
+                    'source' => 'kugou',
+                    'name'   => $rName,
+                    'hash'   => $hash
+                ];
+            }
+        }
+    }
+
+    return ['url' => '', 'source' => '', 'name' => ''];
 }
 
 function lyric_netease($id)
@@ -1722,15 +1820,34 @@ switch ($type) {
 
     case 'url':
         $u = '';
+        $name = isset($_REQUEST['name']) ? trim($_REQUEST['name']) : '';
+        $artist = isset($_REQUEST['artist']) ? trim($_REQUEST['artist']) : '';
         switch ($source) {
             case 'netease':
                 $u = url_netease($id);
+                break;
+            case 'kuwo':
+                $u = url_kuwo($id);
                 break;
             default:
                 $u = url_kuwo($id);
                 if (empty($u)) $u = url_netease($id);
                 break;
         }
+
+        // ⚡ 自动跨平台切源容灾：若当前音源返回空或版权受阻，秒切酷我/酷狗可用高品质流
+        if (empty($u)) {
+            $fallback = url_fallback_match($id, $source, $name, $artist);
+            if (!empty($fallback['url'])) {
+                out_json([
+                    'url'             => $fallback['url'],
+                    'fallback'        => true,
+                    'fallback_source' => $fallback['source'],
+                    'matched_name'    => $fallback['name']
+                ]);
+            }
+        }
+
         out_json(['url' => $u]);
 
     case 'pic':

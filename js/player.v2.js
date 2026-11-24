@@ -32,10 +32,16 @@ var mkPlayer = {
 var rem = [];
 
 // 音频错误处理函数
-function audioErr() {
-    // 没播放过或音频源为空正在重置，直接跳过
+function audioErr(isExplicitFail) {
+    // 没播放过，直接跳过
     if(rem.playlist === undefined) return true;
-    if(!rem.audio || !rem.audio[0] || !rem.audio[0].src || rem.audio[0].src === '' || rem.audio[0].src === window.location.href) return true;
+    
+    // 如果不是明确的失败通知，且音频源为空正在重置，直接跳过避免 DOM 重置假报错
+    if(!isExplicitFail) {
+        if(!rem.audio || !rem.audio[0] || !rem.audio[0].src || rem.audio[0].src === '' || rem.audio[0].src === window.location.href) {
+            return true;
+        }
+    }
     
     // ⚡ 核心智能容灾：若当前音频直连遇到阻断且未走中继代理，自动无缝切换为同源高可用流并重试，杜绝跳歌
     if (rem.audio && rem.audio[0] && rem.playid !== undefined && musicList[1] && musicList[1].item && musicList[1].item[rem.playid]) {
@@ -52,6 +58,7 @@ function audioErr() {
                     p.catch(function(e) {
                         if (e && e.name === 'AbortError') return;
                         console.warn('[Player] 中继流播放异常:', e);
+                        audioErr(true);
                     });
                 }
                 return true;
@@ -60,11 +67,12 @@ function audioErr() {
     }
     
     if(rem.errCount > 10) { // 连续播放失败的歌曲过多
-        layer.msg('似乎出了点问题~播放已停止');
+        layer.msg('多首歌曲暂无可用音源，播放已暂停');
         rem.errCount = 0;
     } else {
         rem.errCount++;     // 记录连续播放失败的歌曲数目
-        layer.msg('当前歌曲播放失败，自动播放下一首');
+        var failName = (rem.playid !== undefined && musicList[1] && musicList[1].item && musicList[1].item[rem.playid]) ? musicList[1].item[rem.playid].name : '当前歌曲';
+        layer.msg('《' + failName + '》暂无可用音源，自动播放下一首');
         nextMusic();    // 切换下一首歌
     } 
 }
@@ -371,7 +379,7 @@ function play(music) {
     
     // 遇到错误播放下一首歌
     if(!music.url || music.url === "err") {
-        audioErr(); // 调用错误处理函数
+        audioErr(true); // 明确错误标记，防止空 src 误判跳过，自动提示并切下一首
         return false;
     }
     
@@ -394,7 +402,7 @@ function play(music) {
             });
         }
     } catch(e) {
-        audioErr();
+        audioErr(true);
         return;
     }
     

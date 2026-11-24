@@ -403,14 +403,20 @@
 
   function fallbackBuiltinUrl(music, retryCount) {
     retryCount = retryCount || 0;
+    var artistStr = Array.isArray(music.artist) ? music.artist.join(' ') : (music.artist || '');
     return fetch('backend.php?types=url&id=' + encodeURIComponent(music.id) +
                  '&source=' + encodeURIComponent(music.source) +
+                 '&name=' + encodeURIComponent(music.name || '') +
+                 '&artist=' + encodeURIComponent(artistStr) +
                  '&_t=' + Date.now())
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
       .then(function (j) {
+        if (j && j.fallback) {
+          console.log('[SourceHub] 跨平台自动切源成功: ' + j.fallback_source + ' -> ' + (j.matched_name || music.name));
+        }
         var u = (j && j.url) || '';
         return ensureSecureStream(u);
       }).catch(function () {

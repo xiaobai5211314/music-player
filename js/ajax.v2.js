@@ -134,15 +134,25 @@ function ajaxUrl(music, callback)
         return true;
     }
     
+    var artistStr = Array.isArray(music.artist) ? music.artist.join(" ") : (music.artist || "");
+    var reqData = "types=url&id=" + encodeURIComponent(music.id) + 
+                  "&source=" + encodeURIComponent(music.source) + 
+                  "&name=" + encodeURIComponent(music.name || "") + 
+                  "&artist=" + encodeURIComponent(artistStr) + 
+                  "&_t=" + new Date().getTime();
+
     $.ajax({ 
         type: mkPlayer.method, 
         url: mkPlayer.api,
-        data: "types=url&id=" + music.id + "&source=" + music.source + "&_t=" + new Date().getTime(),
+        data: reqData,
         dataType : (mkPlayer.method === "POST" ? "json" : "jsonp"),
         success: function(jsonData){
             // 调试信息输出
             if(mkPlayer.debug) {
                 console.debug("歌曲链接：" + jsonData.url);
+            }
+            if(jsonData && jsonData.fallback) {
+                console.log('[Ajax] 自动跨平台切源成功: ' + jsonData.fallback_source + ' -> ' + (jsonData.matched_name || music.name));
             }
             
             // 解决网易云音乐部分歌曲无法播放问题
