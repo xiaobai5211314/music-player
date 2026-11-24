@@ -580,7 +580,11 @@ function download(music) {
         layer.msg('这首歌不支持下载');
         return;
     }
-    openDownloadDialog(music.url, music.name + ' - ' + music.artist);
+    var filename = (music.name + ' - ' + (Array.isArray(music.artist) ? music.artist.join(' ') : music.artist)).trim();
+    if (!/\.(mp3|m4a|flac)$/i.test(filename)) {
+        filename += '.mp3';
+    }
+    openDownloadDialog(music.url, filename);
 }
 
 /**
