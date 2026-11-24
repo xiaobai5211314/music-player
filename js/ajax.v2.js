@@ -169,8 +169,10 @@ function ajaxUrl(music, callback)
                 music.url = "err";
             } else {
                 var finalUrl = jsonData.url;
-                if(finalUrl.indexOf('types=stream') === -1 && /^https?:\/\//i.test(finalUrl)) {
-                    finalUrl = 'backend.php?types=stream&url=' + encodeURIComponent(finalUrl);
+                if(/^http:\/\//i.test(finalUrl) || /kuwo\.cn/i.test(finalUrl)) {
+                    if(finalUrl.indexOf('types=stream') === -1) {
+                        finalUrl = 'backend.php?types=stream&url=' + encodeURIComponent(finalUrl);
+                    }
                 }
                 music.url = finalUrl;
             }

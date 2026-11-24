@@ -632,8 +632,8 @@ function url_netease($id)
         }
     }
 
-    // 2. 调用网易云官方高可用解析接口（优先下发无损 FLAC，无无损时自动回落 standard MP3）
-    $levels = ['lossless&encodeType=flac', 'standard&encodeType=mp3'];
+    // 2. 调用网易云官方高可用解析接口（Web播放优先下发标准/高音质MP3，秒播且各浏览器100%兼容；无MP3时尝试flac）
+    $levels = ['standard&encodeType=mp3', 'exhigh&encodeType=mp3', 'lossless&encodeType=flac'];
     foreach ($levels as $lvl) {
         $url = 'https://music.163.com/api/song/enhance/player/url/v1?ids=[' . rawurlencode($id) . ']&level=' . $lvl;
         list($code, $body) = http_request($url, 'GET', $headers, null, 6);

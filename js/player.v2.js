@@ -36,8 +36,11 @@ function audioErr(isExplicitFail) {
     // 没播放过，直接跳过
     if(rem.playlist === undefined) return true;
     
-    // 如果不是明确的失败通知，且音频源为空正在重置，直接跳过避免 DOM 重置假报错
-    if(!isExplicitFail) {
+    // 严格检查是否为代码显式触发的失败（原生 error 事件传递的是 Event 对象，在 JS 中是 truthy）
+    var isExplicit = (isExplicitFail === true);
+    
+    // 如果不是代码显式通知失败（属于原生 error 事件），且音频源为空或重置中，直接跳过避免 DOM 初始化重置假报错
+    if(!isExplicit) {
         if(!rem.audio || !rem.audio[0] || !rem.audio[0].src || rem.audio[0].src === '' || rem.audio[0].src === window.location.href) {
             return true;
         }
