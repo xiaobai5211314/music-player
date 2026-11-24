@@ -272,6 +272,12 @@ function handle_stream()
             if (connection_aborted()) {
                 return -1; // 客户端切换歌曲断开连接时立即释放 cURL
             }
+            $code = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $ct = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+            if ($code >= 400 || stripos($ct, 'xml') !== false || stripos($ct, 'html') !== false) {
+                // 上游是 403/404 或 XML 错误，中止流输出，杜绝前端将 XML 误认作音频
+                return -1;
+            }
             echo $data;
             if (ob_get_level() > 0) @ob_flush();
             @flush();
@@ -283,10 +289,17 @@ function handle_stream()
                 $code = (int)$m[1];
                 if ($code === 200 || $code === 206) {
                     http_response_code($code);
+                } elseif ($code >= 400) {
+                    http_response_code(502);
                 }
             }
-            if (stripos($h, 'Content-Type:') === 0 ||
-                stripos($h, 'Content-Length:') === 0 ||
+            if (stripos($h, 'Content-Type:') === 0) {
+                if (stripos($h, 'xml') !== false || stripos($h, 'html') !== false) {
+                    http_response_code(502);
+                } else {
+                    header($h);
+                }
+            } elseif (stripos($h, 'Content-Length:') === 0 ||
                 stripos($h, 'Content-Range:') === 0 ||
                 stripos($h, 'Accept-Ranges:') === 0) {
                 header($h);
@@ -632,6 +645,12 @@ function url_netease($id)
         }
     }
 
+    $headers = [
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer'    => 'https://music.163.com/',
+        'Cookie'     => $cookieHeader
+    ];
+
     // 2. 调用网易云官方高可用解析接口（Web播放优先下发标准/高音质MP3，秒播且各浏览器100%兼容；无MP3时尝试flac）
     $levels = ['standard&encodeType=mp3', 'exhigh&encodeType=mp3', 'lossless&encodeType=flac'];
     foreach ($levels as $lvl) {
@@ -639,7 +658,7 @@ function url_netease($id)
         list($code, $body) = http_request($url, 'GET', $headers, null, 6);
         if ($code === 200 && !empty($body)) {
             $json = @json_decode($body, true);
-            if (!empty($json['data'][0]['url'])) {
+            if (!empty($json['data'][0]['url']) && empty($json['data'][0]['freeTrialInfo'])) {
                 $playUrl = (string)$json['data'][0]['url'];
                 if (strpos($playUrl, 'http://') === 0) {
                     $playUrl = 'https://' . substr($playUrl, 7);
@@ -713,12 +732,16 @@ function url_fallback_match($id, $source = 'netease', $name = '', $artist = '')
         }
         $u = url_kuwo($rId);
         if (!empty($u)) {
-            return [
-                'url'    => $u,
-                'source' => 'kuwo',
-                'name'   => $rName,
-                'rid'    => $rId
-            ];
+            list($hc, $hb, $hh) = http_request($u, 'HEAD', ['Referer' => 'https://www.kuwo.cn/'], null, 3);
+            $ct = isset($hh['content-type']) ? $hh['content-type'] : '';
+            if (($hc === 200 || $hc === 206 || $hc === 302) && stripos($ct, 'xml') === false && stripos($ct, 'html') === false) {
+                return [
+                    'url'    => $u,
+                    'source' => 'kuwo',
+                    'name'   => $rName,
+                    'rid'    => $rId
+                ];
+            }
         }
     }
 

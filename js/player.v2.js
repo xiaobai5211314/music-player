@@ -61,12 +61,14 @@ function audioErr(isExplicitFail) {
                     p.catch(function(e) {
                         if (e && e.name === 'AbortError') return;
                         console.warn('[Player] 中继流播放异常:', e);
+                        if (curMusic) curMusic.url = null;
                         audioErr(true);
                     });
                 }
                 return true;
             } catch(e) {}
         }
+        if (curMusic) curMusic.url = null; // 标记失效直链，避免重复命中坏缓存
     }
     
     if(rem.errCount > 10) { // 连续播放失败的歌曲过多
@@ -341,15 +343,11 @@ function playList(id) {
     rem.playSeq = (rem.playSeq || 0) + 1;
     var curSeq = rem.playSeq;
     
-    // 如果链接为空，则 ajax 获取数据后再播放
-    if(!targetMusic.url || targetMusic.url === "err") {
-        ajaxUrl(targetMusic, function(m) {
-            if(curSeq !== rem.playSeq) return; // 已经切换为其他歌曲，丢弃过时回调
-            play(m);
-        });
-    } else {
-        play(targetMusic);
-    }
+    // 每次点播时拉取最新有效直链（音频链接具有防盗链与时间戳时效性，杜绝本地过期缓存死锁）
+    ajaxUrl(targetMusic, function(m) {
+        if(curSeq !== rem.playSeq) return; // 已经切换为其他歌曲，丢弃过时回调
+        play(m);
+    }, true);
 }
 
 // 初始化 Audio

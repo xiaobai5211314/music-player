@@ -32,6 +32,18 @@ $(function(){
     rem.webTitle = document.title;      // 记录页面原本的标题
     rem.errCount = 0;                   // 连续播放失败的歌曲数归零
     
+    // 启动时自动清理本地历史队列中残留的过期音源直链，确保每次点播均获取最新有效流
+    try {
+        var rawPlaying = localStorage.getItem('mkPlayer2_playing');
+        if (rawPlaying) {
+            var parsed = JSON.parse(rawPlaying);
+            if (Array.isArray(parsed)) {
+                parsed.forEach(function(item){ if(item && item.url) delete item.url; });
+                localStorage.setItem('mkPlayer2_playing', JSON.stringify(parsed));
+            }
+        }
+    } catch(e){}
+    
     initProgress();     // 初始化音量条、进度条（进度条初始化要在 Audio 前，别问我为什么……）
     initAudio();    // 初始化 audio 标签，事件绑定
     

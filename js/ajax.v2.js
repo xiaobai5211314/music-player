@@ -118,14 +118,15 @@ function ajaxSearch() {
 }
 
 // 完善获取音乐信息
-// 音乐所在列表ID、音乐对应ID、回调函数
-function ajaxUrl(music, callback)
+// 音乐所在列表ID、音乐对应ID、回调函数、是否强制拉取最新链接
+function ajaxUrl(music, callback, forceRefresh)
 {
-    // 已经有数据，直接回调
-    if(music.url && music.url !== "err") {
+    // 如果已有数据且未要求强刷，直接回调
+    if(!forceRefresh && music.url && music.url !== "err") {
         callback(music);
         return true;
     }
+    music.url = null;
     // id为空，赋值链接错误。直接回调
     if(!music.id) {
         music.url = "err";
