@@ -34,14 +34,16 @@ $(function(){
     
     // 启动时自动清理本地历史队列中残留的过期音源直链，确保每次点播均获取最新有效流
     try {
-        var rawPlaying = localStorage.getItem('mkPlayer2_playing');
-        if (rawPlaying) {
-            var parsed = JSON.parse(rawPlaying);
-            if (Array.isArray(parsed)) {
-                parsed.forEach(function(item){ if(item && item.url) delete item.url; });
-                localStorage.setItem('mkPlayer2_playing', JSON.stringify(parsed));
+        ['mkPlayer2_playing', 'mkPlayer2_his'].forEach(function(k) {
+            var raw = localStorage.getItem(k);
+            if (raw) {
+                var parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(function(item){ if(item && item.url) delete item.url; });
+                    localStorage.setItem(k, JSON.stringify(parsed));
+                }
             }
-        }
+        });
     } catch(e){}
     
     initProgress();     // 初始化音量条、进度条（进度条初始化要在 Audio 前，别问我为什么……）

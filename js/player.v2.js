@@ -100,7 +100,22 @@ function pause() {
             listClick(playIdx);
             return;
         }
-        rem.audio[0].play();
+
+        // 若当前音频未加载、处在错误状态或链接失效，直接重新拉取直链点播
+        if (!rem.audio[0].src || rem.audio[0].error || rem.audio[0].networkState === 3 || rem.audio[0].readyState === 0) {
+            var playIdx = (rem.playid !== undefined && rem.playid >= 0) ? rem.playid : 0;
+            playList(playIdx);
+            return;
+        }
+
+        var p = rem.audio[0].play();
+        if (p !== undefined) {
+            p.catch(function(e) {
+                console.warn('[Player] 播放失败，尝试重新获取有效流:', e);
+                var playIdx = (rem.playid !== undefined && rem.playid >= 0) ? rem.playid : 0;
+                playList(playIdx);
+            });
+        }
     }
 }
 
