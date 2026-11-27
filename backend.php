@@ -88,69 +88,130 @@ function is_public_host($host)
 }
 
 /* ---------------------------------------------------------
+ * 解析重定向目标地址（支持相对路径）
+ * --------------------------------------------------------- */
+function resolve_redirect_url($baseUrl, $location)
+{
+    $location = trim((string)$location);
+    if ($location === '') {
+        return '';
+    }
+    if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $location)) {
+        return $location;
+    }
+    $base = parse_url($baseUrl);
+    if (!is_array($base) || empty($base['scheme']) || empty($base['host'])) {
+        return '';
+    }
+    $origin = $base['scheme'] . '://' . $base['host'] . (isset($base['port']) ? ':' . $base['port'] : '');
+    if (strpos($location, '//') === 0) {
+        return $base['scheme'] . ':' . $location;
+    }
+    if ($location[0] === '/') {
+        return $origin . $location;
+    }
+    $path = isset($base['path']) ? $base['path'] : '/';
+    $dir = preg_replace('#/[^/]*$#', '/', $path);
+    return $origin . ($dir !== '' ? $dir : '/') . $location;
+}
+
+/* ---------------------------------------------------------
  * HTTP 基础请求工具
  * --------------------------------------------------------- */
-function http_request($url, $method = 'GET', $headers = [], $body = null, $timeout = 15)
+function http_request($url, $method = 'GET', $headers = [], $body = null, $timeout = 15, $checkPublic = false)
 {
-    $ch = curl_init();
-    $curlOpts = [
-        CURLOPT_URL            => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS      => 5,
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 8,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        CURLOPT_ENCODING       => '',
-    ];
+    $method = strtoupper(trim((string)$method));
+    $curUrl = $url;
+    $curMethod = $method;
+    $curBody = $body;
+    $maxRedirs = 5;
 
-    $method = strtoupper(trim((string) $method));
-    if ($method === 'POST') {
-        $curlOpts[CURLOPT_POST] = true;
-        if ($body !== null) {
-            $curlOpts[CURLOPT_POSTFIELDS] = is_array($body) ? json_encode($body) : $body;
-        }
-    } elseif ($method !== 'GET') {
-        $curlOpts[CURLOPT_CUSTOMREQUEST] = $method;
-        if ($body !== null) {
-            $curlOpts[CURLOPT_POSTFIELDS] = is_array($body) ? json_encode($body) : $body;
-        }
-    }
-
-    if (!empty($headers)) {
-        $hList = [];
-        foreach ($headers as $k => $v) {
-            if (is_numeric($k)) {
-                $hList[] = $v;
-            } else {
-                if (strtolower($k) === 'host') continue;
-                $hList[] = "$k: $v";
+    for ($hop = 0; $hop <= $maxRedirs; $hop++) {
+        if ($checkPublic) {
+            if (!preg_match('#^https?://#i', $curUrl)) {
+                return [0, false, [], '只支持 http / https 链接'];
+            }
+            $uParts = parse_url($curUrl);
+            $uHost = isset($uParts['host']) ? $uParts['host'] : '';
+            if ($uHost === '' || !is_public_host($uHost)) {
+                return [0, false, [], '重定向目标不可达或属于局域网私有地址'];
             }
         }
-        $curlOpts[CURLOPT_HTTPHEADER] = $hList;
-    }
 
-    $respHeaders = [];
-    $curlOpts[CURLOPT_HEADERFUNCTION] = function ($ch, $headerLine) use (&$respHeaders) {
-        $len = strlen($headerLine);
-        $parts = explode(':', $headerLine, 2);
-        if (count($parts) === 2) {
-            $respHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+        $ch = curl_init();
+        $curlOpts = [
+            CURLOPT_URL            => $curUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => !$checkPublic,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            CURLOPT_ENCODING       => '',
+        ];
+
+        if ($curMethod === 'POST') {
+            $curlOpts[CURLOPT_POST] = true;
+            if ($curBody !== null) {
+                $curlOpts[CURLOPT_POSTFIELDS] = is_array($curBody) ? json_encode($curBody) : $curBody;
+            }
+        } elseif ($curMethod !== 'GET') {
+            $curlOpts[CURLOPT_CUSTOMREQUEST] = $curMethod;
+            if ($curBody !== null) {
+                $curlOpts[CURLOPT_POSTFIELDS] = is_array($curBody) ? json_encode($curBody) : $curBody;
+            }
         }
-        return $len;
-    };
 
-    curl_setopt_array($ch, $curlOpts);
-    $respBody = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
-        @curl_close($ch);
+        if (!empty($headers)) {
+            $hList = [];
+            foreach ($headers as $k => $v) {
+                if (is_numeric($k)) {
+                    $hList[] = $v;
+                } else {
+                    if (strtolower($k) === 'host') continue;
+                    $hList[] = "$k: $v";
+                }
+            }
+            $curlOpts[CURLOPT_HTTPHEADER] = $hList;
+        }
+
+        $respHeaders = [];
+        $curlOpts[CURLOPT_HEADERFUNCTION] = function ($ch, $headerLine) use (&$respHeaders) {
+            $len = strlen($headerLine);
+            $parts = explode(':', $headerLine, 2);
+            if (count($parts) === 2) {
+                $respHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+            }
+            return $len;
+        };
+
+        curl_setopt_array($ch, $curlOpts);
+        $respBody = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
+            @curl_close($ch);
+        }
+
+        if ($checkPublic && in_array($httpCode, [301, 302, 303, 307, 308], true) && !empty($respHeaders['location'])) {
+            $nextUrl = resolve_redirect_url($curUrl, $respHeaders['location']);
+            if ($nextUrl === '') {
+                break;
+            }
+            if (in_array($httpCode, [301, 302, 303], true) && $curMethod !== 'HEAD') {
+                $curMethod = 'GET';
+                $curBody = null;
+            }
+            $curUrl = $nextUrl;
+            continue;
+        }
+
+        return [$httpCode, $respBody, $respHeaders, $err];
     }
 
-    return [$httpCode, $respBody, $respHeaders, $err];
+    return [0, false, [], '重定向次数过多'];
 }
 
 /* ---------------------------------------------------------
@@ -193,7 +254,7 @@ function handle_proxy()
         out_json(['ok' => false, 'error' => '目标地址不可达或属于局域网私有地址']);
     }
 
-    list($code, $respBody, $respHeaders, $err) = http_request($url, $method, $headers, $body, 6);
+    list($code, $respBody, $respHeaders, $err) = http_request($url, $method, $headers, $body, 6, true);
 
     if ($respBody === false) {
         out_json(['ok' => false, 'error' => '代理请求失败：' . $err, 'status' => $code]);
@@ -246,76 +307,116 @@ function handle_stream()
         $headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
     }
 
-    // 根据目标 CDN 注入权威 Referer，防止任何防盗链拦截
-    $ref = 'https://music.163.com/';
-    if (stripos($host, 'kuwo.cn') !== false) {
-        $ref = 'https://www.kuwo.cn/';
-    } elseif (stripos($host, 'qq.com') !== false) {
-        $ref = 'https://y.qq.com/';
-    } elseif (stripos($host, 'kugou.com') !== false) {
-        $ref = 'https://www.kugou.com/';
-    }
+    $curUrl = $url;
+    $curHost = $host;
+    $maxRedirs = 5;
 
-    $ch = curl_init();
-    $curlOpts = [
-        CURLOPT_URL            => $url,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS      => 5,
-        CURLOPT_TIMEOUT        => 300,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_REFERER        => $ref,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        CURLOPT_BUFFERSIZE     => 32768,
-        CURLOPT_WRITEFUNCTION  => function ($curl, $data) {
-            if (connection_aborted()) {
-                return -1; // 客户端切换歌曲断开连接时立即释放 cURL
-            }
-            $code = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $ct = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
-            if ($code >= 400 || stripos($ct, 'xml') !== false || stripos($ct, 'html') !== false) {
-                // 上游是 403/404 或 XML 错误，中止流输出，杜绝前端将 XML 误认作音频
-                return -1;
-            }
-            echo $data;
-            if (ob_get_level() > 0) @ob_flush();
-            @flush();
-            return strlen($data);
-        },
-        CURLOPT_HEADERFUNCTION => function ($curl, $headerLine) {
-            $h = trim($headerLine);
-            if (preg_match('#^HTTP/\S+\s+(\d{3})#i', $h, $m)) {
-                $code = (int)$m[1];
-                if ($code === 200 || $code === 206) {
-                    http_response_code($code);
-                } elseif ($code >= 400) {
-                    http_response_code(502);
+    for ($hop = 0; $hop <= $maxRedirs; $hop++) {
+        // 根据当前跳目标 CDN 注入权威 Referer，防止防盗链拦截
+        $ref = 'https://music.163.com/';
+        if (stripos($curHost, 'kuwo.cn') !== false) {
+            $ref = 'https://www.kuwo.cn/';
+        } elseif (stripos($curHost, 'qq.com') !== false) {
+            $ref = 'https://y.qq.com/';
+        } elseif (stripos($curHost, 'kugou.com') !== false) {
+            $ref = 'https://www.kugou.com/';
+        }
+
+        $hopStatus = 0;
+        $hopLocation = '';
+        $isRedirect = false;
+
+        $ch = curl_init();
+        $curlOpts = [
+            CURLOPT_URL            => $curUrl,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT        => 300,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_REFERER        => $ref,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            CURLOPT_BUFFERSIZE     => 32768,
+            CURLOPT_WRITEFUNCTION  => function ($curl, $data) use (&$hopStatus, &$isRedirect) {
+                if (connection_aborted()) {
+                    return -1; // 客户端切换歌曲断开连接时立即释放 cURL
                 }
-            }
-            if (stripos($h, 'Content-Type:') === 0) {
-                if (stripos($h, 'xml') !== false || stripos($h, 'html') !== false) {
-                    http_response_code(502);
-                } else {
+                if ($isRedirect) {
+                    return strlen($data);
+                }
+                $code = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                $ct = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+                if ($code >= 400 || stripos($ct, 'xml') !== false || stripos($ct, 'html') !== false) {
+                    // 上游是 403/404 或 XML 错误，中止流输出，杜绝前端将 XML 误认作音频
+                    return -1;
+                }
+                echo $data;
+                if (ob_get_level() > 0) @ob_flush();
+                @flush();
+                return strlen($data);
+            },
+            CURLOPT_HEADERFUNCTION => function ($curl, $headerLine) use (&$hopStatus, &$hopLocation, &$isRedirect) {
+                $h = trim($headerLine);
+                if (preg_match('#^HTTP/\S+\s+(\d{3})#i', $h, $m)) {
+                    $hopStatus = (int)$m[1];
+                    $isRedirect = in_array($hopStatus, [301, 302, 303, 307, 308], true);
+                    $hopLocation = '';
+                    if ($hopStatus === 200 || $hopStatus === 206) {
+                        http_response_code($hopStatus);
+                    } elseif ($hopStatus >= 400) {
+                        http_response_code(502);
+                    }
+                    return strlen($headerLine);
+                }
+                if ($isRedirect) {
+                    if (stripos($h, 'Location:') === 0) {
+                        $hopLocation = trim(substr($h, 9));
+                    }
+                    return strlen($headerLine);
+                }
+                if (stripos($h, 'Content-Type:') === 0) {
+                    if (stripos($h, 'xml') !== false || stripos($h, 'html') !== false) {
+                        http_response_code(502);
+                    } else {
+                        header($h);
+                    }
+                } elseif (stripos($h, 'Content-Length:') === 0 ||
+                    stripos($h, 'Content-Range:') === 0 ||
+                    stripos($h, 'Accept-Ranges:') === 0) {
                     header($h);
                 }
-            } elseif (stripos($h, 'Content-Length:') === 0 ||
-                stripos($h, 'Content-Range:') === 0 ||
-                stripos($h, 'Accept-Ranges:') === 0) {
-                header($h);
+                return strlen($headerLine);
             }
-            return strlen($headerLine);
+        ];
+
+        if (!empty($headers)) {
+            $curlOpts[CURLOPT_HTTPHEADER] = $headers;
         }
-    ];
 
-    if (!empty($headers)) {
-        $curlOpts[CURLOPT_HTTPHEADER] = $headers;
-    }
+        curl_setopt_array($ch, $curlOpts);
+        curl_exec($ch);
+        if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
+            @curl_close($ch);
+        }
 
-    curl_setopt_array($ch, $curlOpts);
-    curl_exec($ch);
-    if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
-        @curl_close($ch);
+        if ($isRedirect && $hopLocation !== '' && $hop < $maxRedirs) {
+            $nextUrl = resolve_redirect_url($curUrl, $hopLocation);
+            if (!preg_match('#^https?://#i', $nextUrl)) {
+                http_response_code(400);
+                exit('Invalid redirect URL');
+            }
+            $nextParts = parse_url($nextUrl);
+            $nextHost = isset($nextParts['host']) ? $nextParts['host'] : '';
+            if ($nextHost === '' || !is_public_host($nextHost)) {
+                http_response_code(403);
+                exit('Private host forbidden');
+            }
+            $curUrl = $nextUrl;
+            $curHost = $nextHost;
+            continue;
+        }
+
+        break;
     }
     exit();
 }
@@ -681,7 +782,9 @@ function url_netease($id)
     curl_exec($ch);
     $redir = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
+        @curl_close($ch);
+    }
     if (($httpCode === 302 || $httpCode === 301) && !empty($redir) && stripos($redir, '/404') === false) {
         if (strpos($redir, 'http://') === 0) {
             $redir = 'https://' . substr($redir, 7);
@@ -1161,7 +1264,7 @@ class MusicStorage
 
     private static function saveJsonData($data)
     {
-        @file_put_contents(self::$jsonFile, json_encode($data, JSON_UNESCAPED_UNICODE));
+        @file_put_contents(self::$jsonFile, json_encode($data, JSON_UNESCAPED_UNICODE), LOCK_EX);
     }
 
     public static function syncUser($uid, $nickname = '', $avatar = '')

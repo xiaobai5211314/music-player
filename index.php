@@ -13,5 +13,5 @@ require_once 'm.php';
 require_once 'pc.php';
 }
 }else{
-echo "未知";
+require_once 'pc.php';
 }

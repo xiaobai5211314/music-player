@@ -357,12 +357,22 @@ $(function(){
     initList(); 
 });
 
+function escHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // 展现系统列表中任意首歌的歌曲信息
 function musicInfo(list, index) {
     var music = musicList[list].item[index];
-    var tempStr = '<span class="info-title">歌名：</span>' + music.name + 
-    '<br><span class="info-title">歌手：</span>' + music.artist + 
-    '<br><span class="info-title">专辑：</span>' + music.album;
+    var tempStr = '<span class="info-title">歌名：</span>' + escHtml(music.name) + 
+    '<br><span class="info-title">歌手：</span>' + escHtml(music.artist) + 
+    '<br><span class="info-title">专辑：</span>' + escHtml(music.album);
     
     if(list == rem.playlist && index == rem.playid) {   // 当前正在播放这首歌，那么还可以顺便获取一下时长。。
         tempStr += '<br><span class="info-title">时长：</span>' + formatTime(rem.audio[0].duration);
@@ -621,8 +631,8 @@ function ajaxShare(music) {
         return;
     }
     
-    var tmpHtml = '<p>' + music.artist + ' - ' + music.name + ' 的外链地址为：</p>' + 
-    '<input class="share-url" onmouseover="this.focus();this.select()" value="' + music.url + '">' + 
+    var tmpHtml = '<p>' + escHtml(music.artist) + ' - ' + escHtml(music.name) + ' 的外链地址为：</p>' + 
+    '<input class="share-url" onmouseover="this.focus();this.select()" value="' + escHtml(music.url) + '">' + 
     '<p class="share-tips">* 获取到的音乐外链有效期较短，请按需使用。</p>';
     
     layer.open({
@@ -642,7 +652,7 @@ function changeCover(music) {
     
     if(!img) {  // 封面为空
         ajaxPic(music, changeCover);    // 获取歌曲封面图
-        img == "err";    // 暂时用无图像占个位...
+        img = "err";    // 暂时用无图像占个位...
     }
     
     if(img == "err") {
@@ -772,9 +782,9 @@ function addItem(no, name, auth, album) {
     var html = '<div class="list-item" data-no="' + (no - 1) + '">' +
     '    <span class="list-num">' + no + '</span>' +
     '    <span class="list-mobile-menu"></span>' +
-    '    <span class="music-album">' + album + '</span>' +
-    '    <span class="auth-name">' + auth + '</span>' +
-    '    <span class="music-name">' + name + '</span>' +
+    '    <span class="music-album">' + escHtml(album) + '</span>' +
+    '    <span class="auth-name">' + escHtml(auth) + '</span>' +
+    '    <span class="music-name">' + escHtml(name) + '</span>' +
     '</div>'; 
     rem.mainList.append(html);
 }
@@ -882,8 +892,8 @@ function addSheet(no, name, cover) {
     if(!name) name = "读取中...";
     
     var html = '<div class="sheet-item" data-no="' + no + '">' +
-    '    <img class="sheet-cover" src="' +cover+ '">' +
-    '    <p class="sheet-name">' +name+ '</p>' +
+    '    <img class="sheet-cover" src="' + escHtml(cover) + '">' +
+    '    <p class="sheet-name">' + escHtml(name) + '</p>' +
     '</div>'; 
     rem.sheetList.append(html);
 }
@@ -896,7 +906,7 @@ function clearSheet() {
 function sheetBar() {
     var barHtml;
     if(playerReaddata('uid')) {
-        barHtml = '已同步 ' + rem.uname + ' 的歌单 <span class="login-btn login-refresh">[刷新]</span> <span class="login-btn login-add">[+ 导入歌单]</span> <span class="login-btn login-out">[退出]</span>';
+        barHtml = '已同步 ' + escHtml(rem.uname) + ' 的歌单 <span class="login-btn login-refresh">[刷新]</span> <span class="login-btn login-add">[+ 导入歌单]</span> <span class="login-btn login-out">[退出]</span>';
     } else {
         barHtml = '我的歌单 <span class="login-btn login-in">[网易云同步]</span> <span class="login-btn login-add">[+ 导入平台歌单]</span>';
     }
@@ -1104,5 +1114,10 @@ function playerSavedata(key, data) {
 function playerReaddata(key) {
     if(!window.localStorage) return '';
     key = 'mkPlayer2_' + key;
-    return JSON.parse(localStorage.getItem(key));
+    try {
+        var val = localStorage.getItem(key);
+        return val ? JSON.parse(val) : '';
+    } catch (e) {
+        return '';
+    }
 }
