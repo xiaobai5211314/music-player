@@ -287,6 +287,16 @@ function infer_audio_content_type($url)
     return 'audio/mpeg';
 }
 
+function is_non_audio_content_type($ct)
+{
+    $ct = strtolower((string) $ct);
+    return (stripos($ct, 'xml') !== false
+        || stripos($ct, 'html') !== false
+        || stripos($ct, 'json') !== false
+        || stripos($ct, 'javascript') !== false
+        || strpos(trim($ct), 'text/') === 0);
+}
+
 /* ---------------------------------------------------------
  * 2. 音频流代理 (types=stream)
  * 解决 HTTPS 网页播放 HTTP 音频流被 Mixed Content 拦截
@@ -371,8 +381,8 @@ function handle_stream()
                 }
                 $code = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
                 $ct = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
-                if ($code >= 400 || stripos($ct, 'xml') !== false || stripos($ct, 'html') !== false) {
-                    // 上游是 403/404 或 XML 错误，中止流输出，杜绝前端将 XML 误认作音频
+                if ($code >= 400 || is_non_audio_content_type($ct)) {
+                    // 上游是 403/404 或 JSON/XML/HTML 错误，中止流输出，杜绝前端将错误响应误认作音频
                     $badUpstream = true;
                     return -1;
                 }
@@ -406,6 +416,8 @@ function handle_stream()
                     if ($hopStatus === 200 || $hopStatus === 206) {
                         http_response_code($hopStatus);
                     } elseif ($hopStatus >= 400) {
+                        header_remove('Content-Length');
+                        header_remove('Content-Range');
                         http_response_code(502);
                     }
                     return strlen($headerLine);
@@ -418,21 +430,23 @@ function handle_stream()
                 }
                 if (stripos($h, 'Content-Type:') === 0) {
                     $ctVal = trim(substr($h, 13));
-                    if (stripos($ctVal, 'xml') !== false || stripos($ctVal, 'html') !== false) {
+                    if (is_non_audio_content_type($ctVal)) {
                         $badUpstream = true;
+                        header_remove('Content-Length');
+                        header_remove('Content-Range');
                         http_response_code(502);
                     } else {
                         // 移除 audio/mpeg; charset=UTF-8 等冗余参数，并将 octet-stream 纠正为准确音频 MIME（防止 nosniff 拦截）
                         $ctBase = trim(explode(';', $ctVal)[0]);
-                        if ($ctBase === '' || strcasecmp($ctBase, 'application/octet-stream') === 0 || stripos($ctBase, 'audio/') !== 0) {
+                        if ($ctBase === '' || strcasecmp($ctBase, 'application/octet-stream') === 0 || strcasecmp($ctBase, 'binary/octet-stream') === 0) {
                             $ctBase = infer_audio_content_type($curUrl);
                         }
                         header('Content-Type: ' . $ctBase);
                         $sawContentType = true;
                     }
-                } elseif (stripos($h, 'Content-Length:') === 0 || stripos($h, 'Content-Range:') === 0) {
+                } elseif ((stripos($h, 'Content-Length:') === 0 || stripos($h, 'Content-Range:') === 0) && !$badUpstream) {
                     header($h);
-                } elseif (stripos($h, 'Accept-Ranges:') === 0) {
+                } elseif (stripos($h, 'Accept-Ranges:') === 0 && !$badUpstream) {
                     header($h);
                     $sawAcceptRanges = true;
                 }
