@@ -235,8 +235,9 @@
   /* ================= RSA（PKCS#1 v1.5，BigInt） ================= */
 
   function bytesToBig(u8) {
+    if (typeof global.BigInt !== 'function') throw new Error('当前浏览器不支持 BigInt');
     var hex = bytesToHex(u8).replace(/^(00)+/, '');
-    return hex ? BigInt('0x' + hex) : 0n;
+    return hex ? global.BigInt('0x' + hex) : global.BigInt(0);
   }
 
   function bigToBytes(big, len) {
@@ -253,12 +254,14 @@
   }
 
   function modPow(base, exp, mod) {
-    var result = 1n;
+    var B = global.BigInt;
+    var zero = B(0), one = B(1), two = B(2);
+    var result = one;
     base %= mod;
-    while (exp > 0n) {
-      if (exp & 1n) result = (result * base) % mod;
+    while (exp > zero) {
+      if (exp % two === one) result = (result * base) % mod;
       base = (base * base) % mod;
-      exp >>= 1n;
+      exp = exp / two;
     }
     return result;
   }
@@ -332,18 +335,22 @@
   /* ================= zlib（Streams API，Promise 与回调双用法） ================= */
 
   var Z_MAP = {
-    inflate: [DecompressionStream, 'deflate'],
-    gunzip: [DecompressionStream, 'gzip'],
-    inflateRaw: [DecompressionStream, 'deflate-raw'],
-    deflate: [CompressionStream, 'deflate'],
-    gzip: [CompressionStream, 'gzip'],
-    deflateRaw: [CompressionStream, 'deflate-raw']
+    inflate: ['DecompressionStream', 'deflate'],
+    gunzip: ['DecompressionStream', 'gzip'],
+    inflateRaw: ['DecompressionStream', 'deflate-raw'],
+    deflate: ['CompressionStream', 'deflate'],
+    gzip: ['CompressionStream', 'gzip'],
+    deflateRaw: ['CompressionStream', 'deflate-raw']
   };
 
   function zRun(data, kind) {
     var m = Z_MAP[kind];
+    var StreamCtor = m ? global[m[0]] : null;
+    if (typeof StreamCtor !== 'function') {
+      return Promise.reject(new Error('当前浏览器内核不支持 ' + (m ? m[0] : 'zlib')));
+    }
     var u8 = data instanceof Uint8Array ? data : toBytesFromString(String(data));
-    var stream = new Blob([u8]).stream().pipeThrough(new m[0](m[1]));
+    var stream = new Blob([u8]).stream().pipeThrough(new StreamCtor(m[1]));
     return new Response(stream).arrayBuffer().then(function (ab) {
       return createBuffer(new Uint8Array(ab));
     });

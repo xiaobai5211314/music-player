@@ -294,15 +294,23 @@
     if (!url || typeof url !== 'string') return '';
     url = url.trim();
     if (!/^https?:\/\//i.test(url)) return url;
+    function toAbsStream(raw) {
+      var rel = 'backend.php?types=stream&url=' + encodeURIComponent(raw);
+      try {
+        return new URL(rel, window.location.href).href;
+      } catch (e) {
+        return rel;
+      }
+    }
     // 如果是 http: 协议，网页在 https 环境下必须走同源流代理避免浏览器 Mixed Content 阻断
     if (/^http:\/\//i.test(url)) {
       if (url.indexOf('backend.php?types=stream') !== -1) return url;
-      return 'backend.php?types=stream&url=' + encodeURIComponent(url);
+      return toAbsStream(url);
     }
     // 如果是已知必须绕过 Referer 防盗链的平台 (如 kuwo.cn 返回403)，走同源流代理
     if (/kuwo\.cn/i.test(url)) {
       if (url.indexOf('backend.php?types=stream') !== -1) return url;
-      return 'backend.php?types=stream&url=' + encodeURIComponent(url);
+      return toAbsStream(url);
     }
     // 网易云官方 HTTPS CDN (music.126.net / music.163.com) 及其他原生可播音频：
     // 直接返回原生直链，享受全国千兆 CDN 秒开，彻底避免中继代理占用服务器带宽导致卡顿！

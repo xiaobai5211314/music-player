@@ -75,13 +75,17 @@ function is_public_host($host)
         if (!$ips) {
             return false;
         }
+        $foundIp = false;
         foreach ($ips as $rec) {
             $ipAddr = isset($rec['ip']) ? $rec['ip'] : (isset($rec['ipv6']) ? $rec['ipv6'] : '');
-            if ($ipAddr && filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-                return false;
+            if ($ipAddr) {
+                $foundIp = true;
+                if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                    return false;
+                }
             }
         }
-        return true;
+        return $foundIp;
     }
     // 直接是 IP
     return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
@@ -272,6 +276,17 @@ function handle_proxy()
     ]);
 }
 
+function infer_audio_content_type($url)
+{
+    $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+    if (preg_match('/\.flac$/', $path)) return 'audio/flac';
+    if (preg_match('/\.(m4a|mp4)$/', $path)) return 'audio/mp4';
+    if (preg_match('/\.aac$/', $path)) return 'audio/aac';
+    if (preg_match('/\.(ogg|opus)$/', $path)) return 'audio/ogg';
+    if (preg_match('/\.wav$/', $path)) return 'audio/wav';
+    return 'audio/mpeg';
+}
+
 /* ---------------------------------------------------------
  * 2. 音频流代理 (types=stream)
  * 解决 HTTPS 网页播放 HTTP 音频流被 Mixed Content 拦截
@@ -291,6 +306,8 @@ function handle_stream()
         exit('Private host forbidden');
     }
 
+    $isHead = isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'HEAD';
+
     @ini_set('output_buffering', 'off');
     @ini_set('zlib.output_compression', '0');
     @ob_implicit_flush(true);
@@ -298,9 +315,13 @@ function handle_stream()
         @ob_end_clean();
     }
 
+    header_remove('Pragma');
+    header_remove('Expires');
     header('X-Accel-Buffering: no');
     header('Cache-Control: public, max-age=86400');
     header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Origin, Accept, User-Agent, Range');
+    header('Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Type');
 
     $headers = [];
     if (isset($_SERVER['HTTP_RANGE'])) {
@@ -325,11 +346,15 @@ function handle_stream()
         $hopStatus = 0;
         $hopLocation = '';
         $isRedirect = false;
+        $sawContentType = false;
+        $sawAcceptRanges = false;
+        $badUpstream = false;
 
         $ch = curl_init();
         $curlOpts = [
             CURLOPT_URL            => $curUrl,
             CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_NOBODY         => $isHead,
             CURLOPT_TIMEOUT        => 300,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
@@ -337,17 +362,18 @@ function handle_stream()
             CURLOPT_REFERER        => $ref,
             CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
             CURLOPT_BUFFERSIZE     => 32768,
-            CURLOPT_WRITEFUNCTION  => function ($curl, $data) use (&$hopStatus, &$isRedirect) {
+            CURLOPT_WRITEFUNCTION  => function ($curl, $data) use (&$hopStatus, &$isRedirect, &$badUpstream, $isHead) {
                 if (connection_aborted()) {
                     return -1; // 客户端切换歌曲断开连接时立即释放 cURL
                 }
-                if ($isRedirect) {
+                if ($isRedirect || $isHead) {
                     return strlen($data);
                 }
                 $code = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
                 $ct = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
                 if ($code >= 400 || stripos($ct, 'xml') !== false || stripos($ct, 'html') !== false) {
                     // 上游是 403/404 或 XML 错误，中止流输出，杜绝前端将 XML 误认作音频
+                    $badUpstream = true;
                     return -1;
                 }
                 echo $data;
@@ -355,12 +381,28 @@ function handle_stream()
                 @flush();
                 return strlen($data);
             },
-            CURLOPT_HEADERFUNCTION => function ($curl, $headerLine) use (&$hopStatus, &$hopLocation, &$isRedirect) {
+            CURLOPT_HEADERFUNCTION => function ($curl, $headerLine) use (&$hopStatus, &$hopLocation, &$isRedirect, &$sawContentType, &$sawAcceptRanges, &$badUpstream, &$curUrl) {
                 $h = trim($headerLine);
+                if ($h === '') {
+                    if (!$isRedirect && ($hopStatus === 200 || $hopStatus === 206) && !$badUpstream) {
+                        if (!$sawContentType) {
+                            header('Content-Type: ' . infer_audio_content_type($curUrl));
+                            $sawContentType = true;
+                        }
+                        if (!$sawAcceptRanges) {
+                            header('Accept-Ranges: bytes');
+                            $sawAcceptRanges = true;
+                        }
+                    }
+                    return strlen($headerLine);
+                }
                 if (preg_match('#^HTTP/\S+\s+(\d{3})#i', $h, $m)) {
                     $hopStatus = (int)$m[1];
                     $isRedirect = in_array($hopStatus, [301, 302, 303, 307, 308], true);
                     $hopLocation = '';
+                    $sawContentType = false;
+                    $sawAcceptRanges = false;
+                    $badUpstream = ($hopStatus >= 400);
                     if ($hopStatus === 200 || $hopStatus === 206) {
                         http_response_code($hopStatus);
                     } elseif ($hopStatus >= 400) {
@@ -375,15 +417,24 @@ function handle_stream()
                     return strlen($headerLine);
                 }
                 if (stripos($h, 'Content-Type:') === 0) {
-                    if (stripos($h, 'xml') !== false || stripos($h, 'html') !== false) {
+                    $ctVal = trim(substr($h, 13));
+                    if (stripos($ctVal, 'xml') !== false || stripos($ctVal, 'html') !== false) {
+                        $badUpstream = true;
                         http_response_code(502);
                     } else {
-                        header($h);
+                        // 移除 audio/mpeg; charset=UTF-8 等冗余参数，并将 octet-stream 纠正为准确音频 MIME（防止 nosniff 拦截）
+                        $ctBase = trim(explode(';', $ctVal)[0]);
+                        if ($ctBase === '' || strcasecmp($ctBase, 'application/octet-stream') === 0 || stripos($ctBase, 'audio/') !== 0) {
+                            $ctBase = infer_audio_content_type($curUrl);
+                        }
+                        header('Content-Type: ' . $ctBase);
+                        $sawContentType = true;
                     }
-                } elseif (stripos($h, 'Content-Length:') === 0 ||
-                    stripos($h, 'Content-Range:') === 0 ||
-                    stripos($h, 'Accept-Ranges:') === 0) {
+                } elseif (stripos($h, 'Content-Length:') === 0 || stripos($h, 'Content-Range:') === 0) {
                     header($h);
+                } elseif (stripos($h, 'Accept-Ranges:') === 0) {
+                    header($h);
+                    $sawAcceptRanges = true;
                 }
                 return strlen($headerLine);
             }
@@ -394,7 +445,8 @@ function handle_stream()
         }
 
         curl_setopt_array($ch, $curlOpts);
-        curl_exec($ch);
+        $ok = curl_exec($ch);
+        $curlErrNo = curl_errno($ch);
         if (PHP_VERSION_ID < 80000 && is_resource($ch)) {
             @curl_close($ch);
         }
@@ -414,6 +466,18 @@ function handle_stream()
             $curUrl = $nextUrl;
             $curHost = $nextHost;
             continue;
+        }
+
+        if ((!$ok && $curlErrNo !== CURLE_ABORTED_BY_CALLBACK && $curlErrNo !== CURLE_WRITE_ERROR) || $hopStatus === 0 || $badUpstream) {
+            if (!headers_sent()) {
+                http_response_code(502);
+                header('Content-Type: text/plain; charset=utf-8');
+            }
+            if (!$isHead && $badUpstream) {
+                // 已经中止输出时避免再输出脏数据
+            } elseif (!$isHead && $hopStatus === 0) {
+                echo 'Upstream stream unreachable';
+            }
         }
 
         break;

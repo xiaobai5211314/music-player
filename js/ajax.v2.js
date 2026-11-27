@@ -174,7 +174,12 @@ function ajaxUrl(music, callback, forceRefresh)
                 var finalUrl = jsonData.url;
                 if(/^http:\/\//i.test(finalUrl) || /kuwo\.cn/i.test(finalUrl)) {
                     if(finalUrl.indexOf('types=stream') === -1) {
-                        finalUrl = 'backend.php?types=stream&url=' + encodeURIComponent(finalUrl);
+                        var streamRel = 'backend.php?types=stream&url=' + encodeURIComponent(finalUrl);
+                        try {
+                            finalUrl = new URL(streamRel, window.location.href).href;
+                        } catch (e) {
+                            finalUrl = streamRel;
+                        }
                     }
                 }
                 music.url = finalUrl;

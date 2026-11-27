@@ -30,9 +30,150 @@ var mkPlayer = {
 
 // 存储全局变量
 var rem = [];
+// 极短静音 WAV，用于在异步拉取音源直链前同步解锁移动端 / 蓝牙外放场景下的 <audio> 手势权限
+var SILENT_WAV = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQIAAAAAAA==';
+
+function isUnlockAudioSrc() {
+    return !!(rem.audio && rem.audio[0] && rem.audio[0].src === SILENT_WAV);
+}
+
+function unlockAudio() {
+    if (rem.audioUnlocked || !rem.audio || !rem.audio[0]) return;
+    var el = rem.audio[0];
+    if (el.src && el.src !== '' && el.src !== window.location.href && el.src !== SILENT_WAV && !el.paused) {
+        rem.audioUnlocked = true;
+        return;
+    }
+    if (el.src && el.src !== '' && el.src !== window.location.href && el.src !== SILENT_WAV) {
+        return;
+    }
+    rem.isUnlocking = true;
+    try {
+        el.src = SILENT_WAV;
+        var p = el.play();
+        if (p && typeof p.then === 'function') {
+            p.then(function() {
+                rem.audioUnlocked = true;
+            }).catch(function() {
+                rem.isUnlocking = false;
+            });
+        } else {
+            rem.audioUnlocked = true;
+        }
+    } catch (e) {
+        rem.isUnlocking = false;
+    }
+}
+
+function toAbsStreamUrl(rawUrl) {
+    var rel = 'backend.php?types=stream&url=' + encodeURIComponent(rawUrl);
+    try {
+        return new URL(rel, window.location.href).href;
+    } catch (e) {
+        return rel;
+    }
+}
+
+function bindMediaSessionHandlers() {
+    if (rem.mediaSessionBound || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    rem.mediaSessionBound = true;
+    var ms = navigator.mediaSession;
+    var handlers = {
+        play: function() {
+            if (rem.paused !== false) pause();
+        },
+        pause: function() {
+            if (rem.paused === false) pause();
+        },
+        previoustrack: function() {
+            prevMusic();
+        },
+        nexttrack: function() {
+            nextMusic();
+        },
+        seekto: function(details) {
+            if (!rem.audio || !rem.audio[0] || !details || typeof details.seekTime !== 'number') return;
+            try {
+                if (details.fastSeek && typeof rem.audio[0].fastSeek === 'function') {
+                    rem.audio[0].fastSeek(details.seekTime);
+                } else {
+                    rem.audio[0].currentTime = details.seekTime;
+                }
+            } catch (e) {}
+        }
+    };
+    for (var action in handlers) {
+        try {
+            ms.setActionHandler(action, handlers[action]);
+        } catch (e) {}
+    }
+}
+
+function syncMediaSession(music) {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    bindMediaSessionHandlers();
+    if (!music) return;
+    try {
+        if (typeof MediaMetadata === 'function') {
+            var picUrl = (music.pic && music.pic !== 'err') ? music.pic : 'images/player_cover.png';
+            try {
+                picUrl = new URL(picUrl, window.location.href).href;
+            } catch (e) {}
+            var artistStr = Array.isArray(music.artist) ? music.artist.join(' / ') : (music.artist || '未知歌手');
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: music.name || '未知歌曲',
+                artist: artistStr,
+                album: music.album || '小白在线音乐',
+                artwork: [
+                    { src: picUrl, sizes: '300x300', type: 'image/jpeg' }
+                ]
+            });
+        }
+    } catch (e) {}
+}
+
+function reattachStreamAt(resumeTime) {
+    if (!rem.audio || !rem.audio[0] || rem.playid === undefined || !musicList[1] || !musicList[1].item || !musicList[1].item[rem.playid]) return;
+    var curMusic = musicList[1].item[rem.playid];
+    if (!curMusic || !curMusic.url || curMusic.url === 'err' || curMusic._recoveredOnce) return;
+    curMusic._recoveredOnce = true;
+    var safeResume = (typeof resumeTime === 'number' && isFinite(resumeTime) && resumeTime > 0.5) ? resumeTime : 0;
+
+    // 若当前直链未走中继代理，先用同源中继代理续接；若已走中继代理（可能直链签名过期），强制重取新直链并续播
+    if (curMusic.url.indexOf('backend.php?types=stream') === -1 && /^https?:\/\//i.test(curMusic.url)) {
+        var targetUrl = toAbsStreamUrl(curMusic.url);
+        curMusic.url = targetUrl;
+        rem.pendingResumeTime = safeResume;
+        try {
+            rem.isUnlocking = false;
+            rem.audio[0].pause();
+            rem.audio[0].src = targetUrl;
+            if (rem.audio[0].load) rem.audio[0].load();
+            var p = rem.audio[0].play();
+            if (p && typeof p.catch === 'function') {
+                p.catch(function(e) {
+                    if (e && e.name === 'AbortError') return;
+                    if (e && e.name === 'NotAllowedError') {
+                        audioPause();
+                        return;
+                    }
+                    audioErr(true);
+                });
+            }
+        } catch (e) {}
+    } else if (typeof ajaxUrl === 'function') {
+        var snapSeq = rem.playSeq;
+        ajaxUrl(curMusic, function(fresh) {
+            if (snapSeq !== rem.playSeq) return;
+            rem.pendingResumeTime = safeResume;
+            play(fresh);
+        }, true);
+    }
+}
 
 // 音频错误处理函数
 function audioErr(isExplicitFail) {
+    if (rem.isUnlocking || isUnlockAudioSrc()) return true;
     // 没播放过，直接跳过
     if(rem.playlist === undefined) return true;
     
@@ -51,8 +192,9 @@ function audioErr(isExplicitFail) {
         var curMusic = musicList[1].item[rem.playid];
         if (curMusic.url && curMusic.url !== 'err' && curMusic.url.indexOf('backend.php?types=stream') === -1 && /^https?:\/\//i.test(curMusic.url)) {
             console.warn('[Player] 客户端直连音频受阻，无缝切换为同源流代理重试:', curMusic.name);
-            curMusic.url = 'backend.php?types=stream&url=' + encodeURIComponent(curMusic.url);
+            curMusic.url = toAbsStreamUrl(curMusic.url);
             try {
+                rem.isUnlocking = false;
                 rem.audio[0].pause();
                 rem.audio.attr('src', curMusic.url);
                 if (rem.audio[0].load) rem.audio[0].load();
@@ -61,12 +203,34 @@ function audioErr(isExplicitFail) {
                     p.catch(function(e) {
                         if (e && e.name === 'AbortError') return;
                         console.warn('[Player] 中继流播放异常:', e);
+                        if (e && e.name === 'NotAllowedError') {
+                            audioPause();
+                            showToast('请点击播放按钮恢复播放');
+                            return;
+                        }
                         if (curMusic) curMusic.url = null;
                         audioErr(true);
                     });
                 }
                 return true;
             } catch(e) {}
+        }
+        // 若代理流仍失败（常见于暂停过久导致上游签名链接过期），尝试刷新一次新直链
+        if (curMusic && !curMusic._refreshedOnce && curMusic.url !== 'err' && typeof ajaxUrl === 'function') {
+            curMusic._refreshedOnce = true;
+            var snapTime = rem.audio[0].currentTime || 0;
+            var snapSeq = rem.playSeq;
+            console.warn('[Player] 音频流失效（可能签名过期），重新获取直链:', curMusic.name);
+            ajaxUrl(curMusic, function(fresh) {
+                if (snapSeq !== rem.playSeq) return;
+                if (fresh && fresh.url && fresh.url !== 'err') {
+                    if (snapTime > 1) rem.pendingResumeTime = snapTime;
+                    play(fresh);
+                } else {
+                    audioErr(true);
+                }
+            }, true);
+            return true;
         }
         if (curMusic) curMusic.url = null; // 标记失效直链，避免重复命中坏缓存
     }
@@ -87,6 +251,7 @@ function pause() {
     if(rem.paused === false) {  // 之前是播放状态
         rem.audio[0].pause();  // 暂停
     } else {
+        unlockAudio();
         // 第一次点播放
         if(rem.playlist === undefined) {
             rem.playlist = (rem.dislist !== undefined) ? rem.dislist : 1;
@@ -102,15 +267,19 @@ function pause() {
         }
 
         // 若当前音频未加载、处在错误状态或链接失效，直接重新拉取直链点播
-        if (!rem.audio[0].src || rem.audio[0].error || rem.audio[0].networkState === 3 || rem.audio[0].readyState === 0) {
+        if (!rem.audio[0].src || rem.audio[0].src === window.location.href || isUnlockAudioSrc() || rem.audio[0].error || rem.audio[0].networkState === 3) {
             var playIdx = (rem.playid !== undefined && rem.playid >= 0) ? rem.playid : 0;
             playList(playIdx);
             return;
         }
 
+        rem.isUnlocking = false;
         var p = rem.audio[0].play();
         if (p !== undefined) {
-            p.catch(function(e) {
+            p.then(function() {
+                rem.audioUnlocked = true;
+            }).catch(function(e) {
+                if (e && e.name === 'AbortError') return;
                 console.warn('[Player] 播放失败，尝试重新获取有效流:', e);
                 var playIdx = (rem.playid !== undefined && rem.playid >= 0) ? rem.playid : 0;
                 playList(playIdx);
@@ -156,7 +325,12 @@ function orderChange() {
 
 // 播放
 function audioPlay() {
+    if (rem.isUnlocking || isUnlockAudioSrc()) return;
+    rem.audioUnlocked = true;
     rem.paused = false;     // 更新状态（未暂停）
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        try { navigator.mediaSession.playbackState = 'playing'; } catch (e) {}
+    }
     refreshList();      // 刷新状态，显示播放的波浪
     $(".btn-play").addClass("btn-state-paused");        // 恢复暂停
     
@@ -164,7 +338,9 @@ function audioPlay() {
         $("#music-progress .mkpgb-dot").addClass("dot-move");   // 小点闪烁效果
     }
     
-    var music = musicList[rem.playlist].item[rem.playid];   // 获取当前播放的歌曲信息
+    var music = (musicList[rem.playlist] && musicList[rem.playlist].item) ? musicList[rem.playlist].item[rem.playid] : null;   // 获取当前播放的歌曲信息
+    if (!music) return;
+    syncMediaSession(music);
     var msg = " 正在播放: " + music.name + " - " + music.artist;  // 改变浏览器标题
     
     // 清除定时器
@@ -188,7 +364,11 @@ function titleFlash(msg) {
 }
 // 暂停
 function audioPause() {
+    if (rem.isUnlocking || isUnlockAudioSrc()) return;
     rem.paused = true;      // 更新状态（已暂停）
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        try { navigator.mediaSession.playbackState = 'paused'; } catch (e) {}
+    }
     
     $(".list-playing").removeClass("list-playing");        // 移除其它的正在播放
     
@@ -206,15 +386,19 @@ function audioPause() {
 
 // 播放上一首歌
 function prevMusic() {
-    playList(rem.playid - 1);
+    unlockAudio();
+    var baseId = (typeof rem.playid === 'number' && !isNaN(rem.playid)) ? rem.playid : 0;
+    playList(baseId - 1);
 }
 
 // 播放下一首歌
 function nextMusic() {
+    unlockAudio();
+    var baseId = (typeof rem.playid === 'number' && !isNaN(rem.playid)) ? rem.playid : -1;
     switch (rem.order ? rem.order : 2) {
         case 1:
         case 2: 
-            playList(rem.playid + 1);
+            playList(baseId + 1);
         break;
         case 3: 
             if (musicList[1] && musicList[1].item.length) {
@@ -223,14 +407,16 @@ function nextMusic() {
             }
         break;
         default:
-            playList(rem.playid + 1); 
+            playList(baseId + 1); 
         break;
     }
 }
 // 自动播放时的下一首歌
 function autoNextMusic() {
+    if (rem.isUnlocking || isUnlockAudioSrc()) return;
     if(rem.order && rem.order === 1) {
-        playList(rem.playid);
+        var curIdx = (typeof rem.playid === 'number' && !isNaN(rem.playid)) ? rem.playid : 0;
+        playList(curIdx);
     } else {
         nextMusic();
     }
@@ -247,13 +433,14 @@ function formatTime(sec) {
 
 // 歌曲时间变动回调函数
 function updateProgress(){
+    if (rem.isUnlocking || isUnlockAudioSrc()) return true;
     if(!rem.audio || !rem.audio[0]) return true;
     var cur = rem.audio[0].currentTime || 0;
     var dur = rem.audio[0].duration || 0;
     
     // 实时更新时间文本
     $("#music-cur-time").text(formatTime(cur));
-    if (dur > 0) {
+    if (dur > 0 && isFinite(dur)) {
         $("#music-total-time").text(formatTime(dur));
         // 缓冲进度条
         try {
@@ -263,6 +450,15 @@ function updateProgress(){
                 $("#music-progress .mkpgb-buf").css("width", bufPct + "%");
             }
         } catch(e){}
+        if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && typeof navigator.mediaSession.setPositionState === 'function') {
+            try {
+                navigator.mediaSession.setPositionState({
+                    duration: dur,
+                    playbackRate: rem.audio[0].playbackRate || 1,
+                    position: Math.min(cur, dur)
+                });
+            } catch (e) {}
+        }
     }
     
     // 暂停状态不管
@@ -304,6 +500,7 @@ function listClick(no) {
     }
     
     tmpid = no;
+    unlockAudio();
     playList(tmpid);
     
     return true;
@@ -324,22 +521,33 @@ function playList(id) {
     if(!musicList[1] || !musicList[1].item || musicList[1].item.length <= 0) return true;
     
     // ID 范围限定
+    if (isNaN(id)) id = 0;
     if(id >= musicList[1].item.length) id = 0;
     if(id < 0) id = musicList[1].item.length - 1;
     
     // 记录正在播放的歌曲在正在播放列表中的 id
     rem.playid = id;
     var targetMusic = musicList[1].item[id];
+    if (!targetMusic) return true;
+    delete targetMusic._recoveredOnce;
+    delete targetMusic._refreshedOnce;
+    rem.pendingResumeTime = 0;
     
     // ⚡ 1. 瞬时响应：清除等待中的预取计时器并立刻切断旧流连接释放连接池
     if(rem.prefetchTimer) {
         clearTimeout(rem.prefetchTimer);
         rem.prefetchTimer = null;
     }
-    if(rem.audio && rem.audio[0]) {
+    if(rem.stallTimer) {
+        clearTimeout(rem.stallTimer);
+        rem.stallTimer = null;
+    }
+    if(rem.audio && rem.audio[0] && !rem.isUnlocking && !isUnlockAudioSrc()) {
         try {
             rem.audio[0].pause();
-            rem.audio[0].src = '';
+            if (rem.audioUnlocked) {
+                rem.audio[0].src = '';
+            }
         } catch(e){}
     }
     
@@ -347,6 +555,7 @@ function playList(id) {
     music_bar.goto(0);
     $("#music-cur-time").text("00:00");
     syncFooterSong(targetMusic);
+    syncMediaSession(targetMusic);
     changeCover(targetMusic);
     if(rem.dislist == 2 && rem.playlist !== 2) {
         loadList(2);
@@ -367,7 +576,7 @@ function playList(id) {
 
 // 初始化 Audio
 function initAudio() {
-    rem.audio = $('<audio></audio>').appendTo('body');
+    rem.audio = $('<audio preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow"></audio>').appendTo('body');
     
     // 应用初始音量
     rem.audio[0].volume = volume_bar.percent;
@@ -377,17 +586,75 @@ function initAudio() {
         setPlaybackSpeed(savedSpeed);
     }
     // 绑定歌曲进度变化事件
-    rem.audio[0].addEventListener('timeupdate', updateProgress);   // 更新进度
+    rem.audio[0].addEventListener('timeupdate', function() {
+        if (rem.stallTimer) {
+            clearTimeout(rem.stallTimer);
+            rem.stallTimer = null;
+        }
+        updateProgress();
+    });
+    rem.audio[0].addEventListener('loadedmetadata', function() {
+        if (rem.isUnlocking || isUnlockAudioSrc()) return;
+        if (rem.pendingResumeTime > 0 && rem.audio[0].duration > rem.pendingResumeTime) {
+            var rt = rem.pendingResumeTime;
+            rem.pendingResumeTime = 0;
+            try { rem.audio[0].currentTime = rt; } catch (e) {}
+        }
+    });
     rem.audio[0].addEventListener('play', audioPlay); // 开始播放了
     rem.audio[0].addEventListener('pause', audioPause);   // 暂停
     $(rem.audio[0]).on('ended', autoNextMusic);   // 播放结束
     rem.audio[0].addEventListener('error', audioErr);   // 播放器错误处理
+
+    // 卡顿自愈看门狗：应对蓝牙切设备或直连流中途挂起
+    function scheduleStallCheck() {
+        if (rem.isUnlocking || isUnlockAudioSrc()) return;
+        if (rem.paused !== false || !rem.audio || !rem.audio[0] || rem.audio[0].paused || rem.audio[0].ended) return;
+        if (rem.stallTimer) return;
+        var snapTime = rem.audio[0].currentTime || 0;
+        var snapSeq = rem.playSeq;
+        rem.stallTimer = setTimeout(function() {
+            rem.stallTimer = null;
+            if (snapSeq !== rem.playSeq || rem.paused !== false || !rem.audio || !rem.audio[0]) return;
+            if (!rem.audio[0].paused && !rem.audio[0].ended && Math.abs((rem.audio[0].currentTime || 0) - snapTime) < 0.05) {
+                console.warn('[Player] 音频流长时间缓冲停滞，自动切换中继恢复播放');
+                reattachStreamAt(snapTime);
+            }
+        }, 8000);
+    }
+    rem.audio[0].addEventListener('stalled', scheduleStallCheck);
+    rem.audio[0].addEventListener('waiting', scheduleStallCheck);
+
+    // 蓝牙音箱等输出设备热插拔/切换时检查输出管道是否假死
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === 'function') {
+        try {
+            navigator.mediaDevices.addEventListener('devicechange', function() {
+                if (rem.isUnlocking || isUnlockAudioSrc()) return;
+                if (rem.paused !== false || !rem.audio || !rem.audio[0] || rem.audio[0].paused || rem.audio[0].ended) return;
+                var snapTime = rem.audio[0].currentTime || 0;
+                var snapSeq = rem.playSeq;
+                setTimeout(function() {
+                    if (snapSeq !== rem.playSeq || rem.paused !== false || !rem.audio || !rem.audio[0]) return;
+                    if (!rem.audio[0].paused && !rem.audio[0].ended && Math.abs((rem.audio[0].currentTime || 0) - snapTime) < 0.05) {
+                        console.warn('[Player] 音频输出设备变化后进度停滞，自动重载流恢复输出');
+                        reattachStreamAt(snapTime);
+                    }
+                }, 2500);
+            });
+        } catch (e) {}
+    }
+
+    bindMediaSessionHandlers();
 }
 
 
 // 播放音乐
 // 参数：要播放的音乐数组
 function play(music) {
+    if (!music) {
+        pause();
+        return false;
+    }
     // 调试信息输出
     if(mkPlayer.debug) {
         console.log('开始播放 - ' + music.name);
@@ -401,7 +668,9 @@ function play(music) {
     
     addHis(music);  // 添加到播放历史
     
+    var curPlaySeq = rem.playSeq;
     try {
+        rem.isUnlocking = false;
         rem.audio[0].pause();
         rem.audio[0].src = ''; // 彻底切断上一首流连接，释放 TCP 套接字
         try { rem.audio[0].currentTime = 0; } catch(err){}
@@ -411,10 +680,19 @@ function play(music) {
         }
         var p = rem.audio[0].play();
         if(p !== undefined) {
-            p.catch(function(e) {
+            p.then(function() {
+                rem.audioUnlocked = true;
+            }).catch(function(e) {
                 // 频繁切歌造成的 AbortError 静默处理，避免打断交互
                 if(e && e.name === 'AbortError') return;
+                if(curPlaySeq !== rem.playSeq) return;
                 console.warn('播放中断或失败:', e);
+                if (e && e.name === 'NotAllowedError') {
+                    audioPause();
+                    showToast('浏览器拦截自动播放，请点底部播放键继续');
+                    return;
+                }
+                audioErr(true);
             });
         }
     } catch(e) {
@@ -426,6 +704,7 @@ function play(music) {
     music_bar.goto(0);  // 进度条强制归零
     $("#music-cur-time").text("00:00");
     syncFooterSong(music);  // 同步更新底栏歌曲信息与音质徽章
+    syncMediaSession(music);
     changeCover(music);    // 更新封面展示
     ajaxLyric(music, lyricCallback);     // ajax加载歌词
     music_bar.lock(false);  // 取消进度条锁定
@@ -806,12 +1085,12 @@ $(function(){
         switch(e.keyCode) {
             case 32: // 空格键：播放/暂停
                 e.preventDefault();
-                if(rem.paused === true) {
-                    play();
-                    showToast('继续播放');
-                } else {
+                if(rem.paused === false) {
                     pause();
                     showToast('已暂停');
+                } else {
+                    pause();
+                    showToast('继续播放');
                 }
                 break;
             case 37: // 左箭头：快退 5 秒
